@@ -1,0 +1,32 @@
+package uz.lokmago.restaurant.data.repo
+
+import javax.inject.Inject
+import javax.inject.Singleton
+import uz.lokmago.restaurant.data.local.Session
+import uz.lokmago.restaurant.data.local.SessionStore
+import uz.lokmago.restaurant.data.remote.LokmaApi
+import uz.lokmago.restaurant.data.remote.dto.*
+import uz.lokmago.restaurant.domain.DayStats
+import uz.lokmago.restaurant.domain.Order
+import uz.lokmago.restaurant.domain.OrderStatus
+
+@Singleton
+class OrderRepository @Inject constructor(private val api: LokmaApi) {
+    suspend fun pending(): List<Order> = apiCall { api.pending() }.map { it.toDomain() }
+    suspend fun order(id: String): Order = apiCall { api.order(id) }.toDomain()
+    suspend fun list(status: OrderStatus?): List<Order> =
+        apiCall { api.orders(status?.api) }.map { it.toDomain() }.sortedByDescending { it.createdAtMillis }
+    suspend fun accept(id: String): Order = apiCall { api.accept(id) }.toDomain()
+    suspend fun setStatus(id: String, status: OrderStatus): Order =
+        apiCall { api.setStatus(id, StatusRequest(status.api)) }.toDomain()
+    suspend fun today(): DayStats = apiCall { api.today() }.toDomain()
+}
+
+@Singleton
+class AuthRepository @Inject constructor(private val api: LokmaApi, private val session: SessionStore) {
+    suspend fun login(login: String, password: String) {
+        val r = apiCall { api.login(LoginRequest(login.trim(), password)) }
+        // restaurantId is intentionally NOT stored: the backend derives it from the JWT on every call.
+        session.save(Session(r.token, r.restaurant.name, r.user.login))
+    }
+}

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">LokmaGo Restoran</string>
+    <string name="channel_orders_name">LokmaGo — Yangi buyurtmalar</string>
+    <string name="channel_orders_desc">Yangi buyurtma kelganda ovoz va vibratsiya bilan xabar beradi</string>
+    <string name="channel_alert_name">Signal holati</string>
+    <string name="channel_alert_desc">Yangi buyurtma qabul qilinmaguncha signal ishlab turadi</string>
+</resources>

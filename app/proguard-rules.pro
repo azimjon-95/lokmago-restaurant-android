@@ -1,0 +1,5 @@
+-keepattributes *Annotation*, InnerClasses, Signature
+-dontwarn org.slf4j.**
+-keep class uz.lokmago.restaurant.data.remote.dto.** { *; }
+-keepclassmembers class **$$serializer { *; }
+-keep class io.socket.** { *; }

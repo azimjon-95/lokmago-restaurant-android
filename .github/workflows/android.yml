@@ -1,0 +1,25 @@
+name: Android CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Repo → Settings → Secrets and variables → Actions
+      API_GATEWAY_URL: ${{ secrets.API_GATEWAY_URL }}
+      API_GATEWAY_PASSWORD: ${{ secrets.API_GATEWAY_PASSWORD }}
+      API_GATEWAY_HEADER: ${{ vars.API_GATEWAY_HEADER }}
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon
+      - name: Assemble debug
+        run: gradle :app:assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with: { name: app-debug, path: app/build/outputs/apk/debug/*.apk }

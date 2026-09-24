@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54" android:translateX="0" android:translateY="1">
+        <path android:pathData="M36 62a15 15 0 0 1 1.5-29.4 17 17 0 0 1 33 0A15 15 0 0 1 72 62M36 62v17a4 4 0 0 0 4 4h28a4 4 0 0 0 4-4V62M36 72h36"
+            android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:startY="20" android:endY="88" android:startX="54" android:endX="54"
+                    android:startColor="#FFB020" android:endColor="#FF6A00" />
+            </aapt:attr>
+        </path>
+    </group>
+</vector>
