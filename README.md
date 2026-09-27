@@ -35,12 +35,25 @@ Qabul qilingach keyingisi avtomatik chiqadi; signal navbat bo'shaguncha davom et
 `Qabul qilish` so'rovlari `Mutex` bilan ketma-ket bajariladi; tarmoq bo'lmasa buyurtma "qabul qilindi" deb ko'rsatilmaydi.
 Manbalar (Socket.IO, FCM, pending sync) `orderId` bo'yicha deduplikatsiya qilinadi.
 
+## Buyurtmani yakunlashni nazorat qilish (delivery reminder)
+
+Buyurtma `Yetkazilmoqda` holatiga o'tgach, agar backend belgilangan vaqt ichida "Yetkazildi" kelmasa,
+serverdan eslatma keladi (Socket.IO `order:delivery-reminder` yoki FCM `order_delivery_reminder`) —
+`OrderCoordinator.onDeliveryReminder()` oddiy (alarmsiz) notification ko'rsatadi, ikkita amal bilan:
+**🟢 Yetkazildi** va **🟡 Jarayonda** (`alert/ReminderActionReceiver.kt` — ilova yopiq bo'lsa ham ishlaydi).
+Xuddi shu ikki amal `OrderDetailScreen`da ham bor (order `Yetkazilmoqda` holatida bo'lganda).
+
+Ikkalasi ham backendning **mavjud** completion yo'lini chaqiradi (`POST orders/:id/reminder/ack`) —
+Android hech qachon orderni o'zicha "yakunlangan" deb belgilamaydi; server javobi kutiladi (mavjud
+`accept()` bilan bir xil naqsh). Batafsil: backend repo README, "Buyurtmani yakunlashni nazorat qilish".
+
 ## Arxitektura
 
 ```
 Socket.IO (ochiq) ─┐
 FCM (fon/yopiq) ───┼─► OrderCoordinator ─► OrderQueue ─► AlertController ─► OrderAlertService (ovoz+vibratsiya)
-GET /orders/pending┘                                   └► Notifier (kanal: orders_new_v1, HIGH)
+GET /orders/pending┘  │                                 └► Notifier (kanal: orders_new_v1, HIGH)
+                      └─► onDeliveryReminder ─► Notifier.notifyReminder (oddiy notification, 2 amal)
 ```
 
 ## Ikonkalar
@@ -58,3 +71,4 @@ GET /orders/pending┘                                   └► Notifier (kanal:
 
 - Kod hali Android Studio'da yig'ilmagan (Gradle wrapper yo'q) — birinchi yig'ishda kutubxona versiyalarini yangilash kerak bo'lishi mumkin.
 - UI matnlari hozircha kodda; `strings.xml`ga ko'chirish (va ru/en) keyingi qadam.
+- Delivery-reminder oqimi uchun hali instrumentation/unit test yozilmagan (backend tomoni 26 ta testda to'liq qoplangan); `OrderCoordinator.reminderAck`/`onDeliveryReminder` uchun test qo'shish keyingi qadam.

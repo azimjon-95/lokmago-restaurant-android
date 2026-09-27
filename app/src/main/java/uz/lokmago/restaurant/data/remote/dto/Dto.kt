@@ -41,6 +41,10 @@ import uz.lokmago.restaurant.domain.*
 }
 
 @Serializable data class StatusRequest(val status: String)
+/** "delivered" | "in_progress" — see OrderRepository.reminderAck / backend §"Buyurtmani yakunlashni nazorat qilish". */
+@Serializable data class ReminderAckRequest(val action: String)
+/** Minimal Socket.IO payload for `order:delivery-reminder` — intentionally NOT a full order (TZ §22). */
+@Serializable data class ReminderEventDto(val orderId: String, val reminderCount: Int)
 @Serializable data class DeviceRequest(val token: String, val deviceId: String, val platform: String = "android")
 
 @Serializable data class StatsDto(

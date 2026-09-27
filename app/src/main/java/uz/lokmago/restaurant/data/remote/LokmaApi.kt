@@ -11,6 +11,9 @@ interface LokmaApi {
     @GET("orders/{id}") suspend fun order(@Path("id") id: String): OrderDto
     @POST("orders/{id}/accept") suspend fun accept(@Path("id") id: String): OrderDto
     @POST("orders/{id}/status") suspend fun setStatus(@Path("id") id: String, @Body body: StatusRequest): OrderDto
+    /** "Yetkazildi" / "Jarayonda" from a delivery reminder. "delivered" goes through the SAME existing
+     *  completion path as [setStatus]; "in_progress" only postpones the next reminder server-side. */
+    @POST("orders/{id}/reminder/ack") suspend fun reminderAck(@Path("id") id: String, @Body body: ReminderAckRequest): OrderDto
 
     @GET("stats/today") suspend fun today(): StatsDto
 

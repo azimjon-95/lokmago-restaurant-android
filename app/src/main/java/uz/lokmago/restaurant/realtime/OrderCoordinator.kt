@@ -55,6 +55,10 @@ class OrderCoordinator @Inject constructor(
     /** Any order changed (status etc.) — list/detail screens refresh on this. */
     val changes: SharedFlow<Order> = _changes.asSharedFlow()
 
+    private val _reminders = MutableSharedFlow<Pair<String, Int>>(extraBufferCapacity = 16)
+    /** orderId to reminderCount — a "buyurtma yetkazildimi?" nudge arrived (socket or push). */
+    val reminders: SharedFlow<Pair<String, Int>> = _reminders.asSharedFlow()
+
     private val acceptLock = Mutex()
     private val inflight = ConcurrentHashMap.newKeySet<String>()
     private var started = false
@@ -82,6 +86,7 @@ class OrderCoordinator @Inject constructor(
                     SocketEvent.Connected -> { syncPending(); devices.register() }   // reconnect ⇒ re-sync, nothing is lost
                     is SocketEvent.OrderNew -> ingest(e.order)
                     is SocketEvent.OrderUpdated -> { queue.offer(e.order).also { if (it) arrived(e.order) }; _changes.emit(e.order) }
+                    is SocketEvent.DeliveryReminder -> onDeliveryReminder(e.orderId, e.reminderCount)
                 }
             }
         }
@@ -137,6 +142,34 @@ class OrderCoordinator @Inject constructor(
                 alert.markResolved(orderId); inflight.remove(orderId)
             }
         }
+    }
+
+    /**
+     * A delivery order hasn't been marked "Yetkazildi" in time. This is a NUDGE, not a new order —
+     * it never touches [queue] or the loud alarm service; it's a plain notification with two
+     * direct actions, same idea as the existing Telegram reminder (TZ §19).
+     */
+    fun onDeliveryReminder(orderId: String, reminderCount: Int, title: String? = null, body: String? = null) {
+        notifier.notifyReminder(orderId, title ?: "🚴 Buyurtma yetkazildimi?", body ?: "Buyurtma hali yakunlanmagan.")
+        _reminders.tryEmit(orderId to reminderCount)
+    }
+
+    /**
+     * "Yetkazildi" (delivered = true) / "Jarayonda" (false) from a reminder — notification action,
+     * Telegram-style in-app button, or the detail screen's secondary button all call this. Backend
+     * is the source of truth: local state never marks the order complete on its own (TZ §18/§24).
+     */
+    suspend fun reminderAck(orderId: String, delivered: Boolean): ActionResult = try {
+        val o = repo.reminderAck(orderId, delivered)
+        notifier.cancel(orderId)
+        _changes.emit(o)
+        ActionResult.Done(o)
+    } catch (e: AppError.AlreadyHandled) {
+        notifier.cancel(orderId)
+        runCatching { repo.order(orderId) }.getOrNull()?.let { _changes.emit(it) }
+        ActionResult.AlreadyHandled
+    } catch (e: AppError) {
+        ActionResult.Failed(e.message ?: "Xatolik")
     }
 
     fun onRemoteChange(orderId: String) {

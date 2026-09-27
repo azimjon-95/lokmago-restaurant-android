@@ -45,5 +45,14 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".alert.ReminderActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="uz.lokmago.restaurant.action.REMINDER_DELIVERED" />
+                <action android:name="uz.lokmago.restaurant.action.REMINDER_IN_PROGRESS" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

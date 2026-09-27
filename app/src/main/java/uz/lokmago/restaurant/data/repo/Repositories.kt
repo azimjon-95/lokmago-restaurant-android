@@ -19,6 +19,10 @@ class OrderRepository @Inject constructor(private val api: LokmaApi) {
     suspend fun accept(id: String): Order = apiCall { api.accept(id) }.toDomain()
     suspend fun setStatus(id: String, status: OrderStatus): Order =
         apiCall { api.setStatus(id, StatusRequest(status.api)) }.toDomain()
+    /** [delivered]=true completes the order via the existing backend completion path;
+     *  false = "Jarayonda" (in_progress) — just postpones the next reminder, no status change. */
+    suspend fun reminderAck(id: String, delivered: Boolean): Order =
+        apiCall { api.reminderAck(id, ReminderAckRequest(if (delivered) "delivered" else "in_progress")) }.toDomain()
     suspend fun today(): DayStats = apiCall { api.today() }.toDomain()
 }
 

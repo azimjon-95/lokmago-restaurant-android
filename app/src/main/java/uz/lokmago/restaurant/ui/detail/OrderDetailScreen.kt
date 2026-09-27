@@ -71,6 +71,20 @@ class OrderDetailViewModel @Inject constructor(
             }
         }
     }
+
+    /** "Jarayonda" — the delivery is still in progress. Does not change the order's status; it
+     *  only tells the backend to postpone the next reminder (TZ §9/§21). */
+    fun stillInProgress() {
+        val o = ui.value.order ?: return
+        viewModelScope.launch {
+            ui.value = ui.value.copy(busy = true, notice = null)
+            when (val r = coordinator.reminderAck(o.id, delivered = false)) {
+                is ActionResult.Done -> ui.value = ui.value.copy(order = r.order, busy = false, notice = "Qabul qilindi — keyinroq yana eslatamiz")
+                ActionResult.AlreadyHandled -> { load().join(); ui.value = ui.value.copy(busy = false, notice = "Buyurtma allaqachon yakunlangan") }
+                is ActionResult.Failed -> ui.value = ui.value.copy(busy = false, notice = r.message)
+            }
+        }
+    }
 }
 
 @Composable
@@ -139,7 +153,12 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                     Spacer(Modifier.height(4.dp))
                 }
                 o.nextAction()?.let { a ->
-                    Box(Modifier.padding(16.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (o.status == OrderStatus.DELIVERING) {
+                            // Reminder-driven secondary action — order stays open, just tells the backend
+                            // "hali yetkazilmoqda" so the next automatic reminder is postponed (TZ §9/§21).
+                            OutlinedActionButton("🟡 Jarayonda", enabled = !ui.busy) { vm.stillInProgress() }
+                        }
                         PrimaryButton(a.label, icon = R.drawable.ic_check, loading = ui.busy,
                             color = if (o.status == OrderStatus.ACCEPTED) Lg.Orange else Lg.Green) { vm.act() }
                     }
@@ -158,6 +177,13 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
     Row(Modifier.fillMaxWidth()) {
         Text(k, color = if (big) Lg.Text else Lg.Muted, fontSize = if (big) 17.sp else 13.sp, fontWeight = if (big) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.weight(1f))
         Text(v, color = Lg.Text, fontSize = if (big) 20.sp else 13.sp, fontWeight = if (big) FontWeight.ExtraBold else FontWeight.Normal)
+    }
+
+@Composable private fun OutlinedActionButton(text: String, enabled: Boolean = true, onClick: () -> Unit) =
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Lg.Orange.copy(alpha = if (enabled) 0.12f else 0.06f))
+        .let { if (enabled) it.clickableNoRipple(onClick) else it }.padding(14.dp),
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        Text(text, color = if (enabled) Lg.Orange else Lg.Muted, fontWeight = FontWeight.SemiBold)
     }
 
 @Composable private fun OutlinedButtonLike(text: String, onClick: () -> Unit) =

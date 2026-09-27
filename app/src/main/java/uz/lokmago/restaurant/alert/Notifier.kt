@@ -74,6 +74,33 @@ class Notifier @Inject constructor(
 
     fun newOrderText(o: Order) = "#${o.number} — ${o.total.som()}\n${o.itemsCount} ta taom • ${o.payment.label}"
 
+    /** Delivery-completion reminder: normal (non-alarm) notification, tap opens the order,
+     *  two direct actions mirror the Telegram reminder buttons in the TZ. */
+    fun notifyReminder(orderId: String, title: String, body: String) {
+        if (!canPost()) return
+        val n = NotificationCompat.Builder(ctx, CH_ORDERS)
+            .setSmallIcon(R.drawable.ic_bell_ring)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(openOrder(orderId))
+            .addAction(0, "🟢 Yetkazildi", reminderAction(orderId, ReminderActionReceiver.ACTION_DELIVERED))
+            .addAction(0, "🟡 Jarayonda", reminderAction(orderId, ReminderActionReceiver.ACTION_IN_PROGRESS))
+            .build()
+        nm.notify(idFor(orderId), n)
+    }
+
+    private fun reminderAction(orderId: String, action: String): PendingIntent {
+        val i = Intent(ctx, ReminderActionReceiver::class.java).setAction(action)
+            .putExtra(ReminderActionReceiver.EXTRA_ORDER_ID, orderId)
+        return PendingIntent.getBroadcast(ctx, (orderId + action).hashCode(), i,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
     fun cancel(orderId: String) = nm.cancel(idFor(orderId))
     fun cancelAllOrders() = nm.activeNotifications.filter { it.id != SERVICE_ID }.forEach { nm.cancel(it.id) }
 

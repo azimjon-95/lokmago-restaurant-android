@@ -15,12 +15,15 @@ import kotlinx.serialization.json.Json
 import uz.lokmago.restaurant.BuildConfig
 import uz.lokmago.restaurant.data.remote.Endpoints
 import uz.lokmago.restaurant.data.remote.dto.OrderDto
+import uz.lokmago.restaurant.data.remote.dto.ReminderEventDto
 import uz.lokmago.restaurant.domain.Order
 
 sealed interface SocketEvent {
     data object Connected : SocketEvent
     data class OrderNew(val order: Order) : SocketEvent
     data class OrderUpdated(val order: Order) : SocketEvent
+    /** Delivery-completion reminder — payload is minimal (orderId + count), not a full order. */
+    data class DeliveryReminder(val orderId: String, val reminderCount: Int) : SocketEvent
 }
 
 /**
@@ -58,6 +61,7 @@ class SocketManager @Inject constructor(private val json: Json) {
             on(Socket.EVENT_CONNECT_ERROR) { _connected.value = false }
             on("order:new") { a -> parse(a)?.let { _events.tryEmit(SocketEvent.OrderNew(it)) } }
             on("order:updated") { a -> parse(a)?.let { _events.tryEmit(SocketEvent.OrderUpdated(it)) } }
+            on("order:delivery-reminder") { a -> parseReminder(a)?.let { _events.tryEmit(SocketEvent.DeliveryReminder(it.orderId, it.reminderCount)) } }
             connect()
         }
     }
@@ -70,5 +74,9 @@ class SocketManager @Inject constructor(private val json: Json) {
 
     private fun parse(args: Array<Any>): Order? = runCatching {
         json.decodeFromString<OrderDto>(args[0].toString()).toDomain()
+    }.getOrNull()
+
+    private fun parseReminder(args: Array<Any>): ReminderEventDto? = runCatching {
+        json.decodeFromString<ReminderEventDto>(args[0].toString())
     }.getOrNull()
 }
