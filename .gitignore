@@ -13,3 +13,13 @@ env.properties
 *.jks
 *.keystore
 app/google-services.json
+# more secrets / build outputs
+**/google-services.json
+*.p12
+*.pem
+*.pfx
+keystore.properties
+signing/
+*.apk
+*.aab
+*.apks

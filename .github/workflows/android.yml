@@ -2,24 +2,24 @@ name: Android CI
 on:
   push: { branches: [main] }
   pull_request:
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Repo → Settings → Secrets and variables → Actions
-      API_GATEWAY_URL: ${{ secrets.API_GATEWAY_URL }}
+      # Optional. Debug builds fall back to https://api.lokmago.uz/ when unset. Fork PRs never receive secrets.
       API_GATEWAY_PASSWORD: ${{ secrets.API_GATEWAY_PASSWORD }}
-      API_GATEWAY_HEADER: ${{ vars.API_GATEWAY_HEADER }}
       VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4     # gradle-wrapper.jar must be an official Gradle build
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: "8.9" }
       - name: Unit tests
-        run: gradle :app:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
       - name: Assemble debug
-        run: gradle :app:assembleDebug --no-daemon
+        run: ./gradlew :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
-        with: { name: app-debug, path: app/build/outputs/apk/debug/*.apk }
+        with: { name: app-debug, path: app/build/outputs/apk/debug/*.apk, retention-days: 7 }

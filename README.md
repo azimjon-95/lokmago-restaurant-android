@@ -12,6 +12,10 @@ gradle wrapper && ./gradlew :app:testDebugUnitTest :app:assembleDebug
 
 `google-services.json` bo'lmasa ilova baribir yig'iladi, faqat FCM push o'chiq bo'ladi (Socket.IO ishlayveradi).
 
+## Release APK
+
+Production imzolangan APK, release guard va qabul tekshiruvi: **[docs/RELEASE.md](docs/RELEASE.md)**. Qisqacha: `./gradlew :app:assembleRelease` (yoki Actions → *Release APK*).
+
 ## Env (`env.properties` yoki CI environment)
 
 | Kalit | Ma'nosi |
@@ -69,6 +73,6 @@ GET /orders/pending┘  │                                 └► Notifier (kan
 
 ## Ma'lum cheklovlar
 
-- Kod hali Android Studio'da yig'ilmagan (Gradle wrapper yo'q) — birinchi yig'ishda kutubxona versiyalarini yangilash kerak bo'lishi mumkin.
+- Kod hali Android Studio'da yig'ilmagan — birinchi yig'ishda kutubxona versiyalarini yangilash kerak bo'lishi mumkin.
 - UI matnlari hozircha kodda; `strings.xml`ga ko'chirish (va ru/en) keyingi qadam.
 - Delivery-reminder oqimi uchun hali instrumentation/unit test yozilmagan (backend tomoni 26 ta testda to'liq qoplangan); `OrderCoordinator.reminderAck`/`onDeliveryReminder` uchun test qo'shish keyingi qadam.

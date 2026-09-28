@@ -8,4 +8,11 @@ object Endpoints {
     val apiBase: String = "$gateway/${BuildConfig.API_PATH_PREFIX.trim('/')}/"
     val socketUrl: String = BuildConfig.SOCKET_URL.trim().trimEnd('/').ifEmpty { gateway }
     val socketPath: String = BuildConfig.SOCKET_PATH.ifEmpty { "/socket.io/" }
+
+    /** Defence in depth behind the Gradle release validation: a release build never speaks plain HTTP. */
+    init {
+        if (!BuildConfig.DEBUG) {
+            check(apiBase.startsWith("https://") && socketUrl.startsWith("https://")) { "Release build requires HTTPS endpoints" }
+        }
+    }
 }
