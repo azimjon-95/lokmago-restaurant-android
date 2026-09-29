@@ -32,7 +32,7 @@ data class LoginUi(val loading: Boolean = false, val error: String? = null)
 class LoginViewModel @Inject constructor(private val auth: AuthRepository) : ViewModel() {
     val ui = MutableStateFlow(LoginUi())
     fun login(login: String, password: String) {
-        if (login.isBlank() || password.isBlank()) { ui.value = LoginUi(error = "Login va parolni kiriting"); return }
+        if (login.isBlank() || password.isBlank()) { ui.value = LoginUi(error = "Restoran ID va PIN kodni kiriting"); return }
         viewModelScope.launch {
             ui.value = LoginUi(loading = true)
             ui.value = try { auth.login(login, password); LoginUi() } catch (e: AppError) { LoginUi(error = e.message) }
@@ -54,11 +54,11 @@ fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
         LgIcon(R.drawable.ic_chef_hat, Lg.Orange, 72.dp)
         Spacer(Modifier.height(10.dp))
         Text("LokmaGo Restoran", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Restoran hisobingiz bilan kiring", color = Lg.Muted, fontSize = 14.sp)
+        Text("Restoran ID va PIN kod bilan kiring", color = Lg.Muted, fontSize = 14.sp)
         Spacer(Modifier.height(28.dp))
-        OutlinedTextField(login, { login = it }, Modifier.fillMaxWidth(), label = { Text("Login") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large)
+        OutlinedTextField(login, { login = it }, Modifier.fillMaxWidth(), label = { Text("Restoran ID") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large)
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(pass, { pass = it }, Modifier.fillMaxWidth(), label = { Text("Parol") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large,
+        OutlinedTextField(pass, { pass = it }, Modifier.fillMaxWidth(), label = { Text("PIN kod") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large,
             visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
         ui.error?.let { Text(it, color = Lg.Red, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp)) }
         Spacer(Modifier.height(20.dp))

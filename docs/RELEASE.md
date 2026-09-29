@@ -38,7 +38,7 @@ scripts/verify-apk.sh app/build/outputs/apk/release/app-release.apk
 Natija: `app/build/outputs/apk/release/app-release.apk` (imzolangan).
 
 **Release guard** (`gradle/release-validation.gradle.kts`) quyidagilar bo'lsa build'ni rad etadi:
-API/Socket URL `https://api.lokmago.uz` emas (http, boshqa host, port, localhost/10.0.2.2/example/test/staging),
+API/Socket URL `https://restoran-api.lokma.uz` emas (http, boshqa host, port, localhost/10.0.2.2/example/test/staging),
 `SOCKET_PATH`/`API_PATH_PREFIX` noto'g'ri, `VERSION_CODE`/`VERSION_NAME` aniq berilmagan, keystore yo'q yoki
 parollar bo'sh, `env.properties`da server-secret nomli kalit bor. Debug build faqat `DEBUG_*` kalitlarini
 o'qiydi — test server release'ga tushib qola olmaydi.
@@ -54,13 +54,13 @@ Repo public bo'lgani uchun artifact ham ko'rinishi mumkin — shu sabab gateway 
 
 | # | Tekshiruv | Kutilgan natija |
 |---|---|---|
-| 1 | Login (to'g'ri / noto'g'ri parol) | to'g'ri → Bosh sahifa; noto'g'ri → xato xabari |
+| 1 | Login: Restoran ID + PIN (to'g'ri / noto'g'ri; 3 xato PIN) | to'g'ri → Bosh sahifa; noto'g'ri → xato; 3 xatodan keyin «PIN vaqtincha bloklandi» |
 | 2 | Restoran izolyatsiyasi: A restoran login qilib, B restoran orderini so'rash (`curl` bilan A tokeni + B order id) | `404`, ilovada B ma'lumoti yo'q |
 | 3 | API: `Bosh sahifa`, `Buyurtmalar`, `Hisobot` yuklanadi | ma'lumot keladi, 401 yo'q |
 | 4 | Socket.IO: ilova ochiq, yangi buyurtma yaratish | to'liq ekranli alert ≤ 2 s |
 | 5 | FCM: ilovani yopib (swipe) yangi buyurtma yaratish | notification + ovoz; bosilsa order ochiladi |
 | 6 | Order notification: 5–6 ta buyurtma bir vaqtda | navbat bilan, bittadan qabul qilinadi |
-| 7 | Status: Qabul → Tayyorlanmoqda → Tayyor → Yetkazilmoqda → Yetkazildi | har biri serverda o'zgaradi; ikkinchi qurilmada realtime ko'rinadi |
+| 7 | Status: Qabul → Tayyorlanmoqda → Tayyor → Yetkazilmoqda; delivery'da «Yetkazildi» ≥30 daqiqadan keyin | har biri serverda o'zgaradi; erta bosilsa «Hali erta» xabari; ikkinchi qurilmada realtime ko'rinadi |
 | 8 | Reminder: `REMINDER_DELAY_MINUTES`ni test uchun kichraytirib, "Yetkazilmoqda"da qoldirish | eslatma keladi; 🟡 Jarayonda orderni yopmaydi; 🟢 Yetkazildi yopadi |
 | 9 | Offline: internetni o'chirib "Qabul qilish" | "qabul qilindi" deb yolg'on ko'rsatilmaydi |
 
@@ -74,6 +74,6 @@ adb logcat -d | grep -Ei "bearer |authorization|password|eyJ[A-Za-z0-9_-]{10,}\.
 
 Tekshirilgan (avtomatik): release guard (14 stsenariy, Gradle 8.9 ostida), `verify-apk.sh` (sintetik APK'lar
 bilan), backend 26/26 test, Gradle wrapper (rasmiy checksum bilan).
-**Tekshirilmagan:** haqiqiy `assembleRelease` va qurilmadagi 1–9 qadamlar — bu yerda Android SDK / Google Maven
+**Tekshirilmagan:** haqiqiy lakmago-server bilan birga ishlash (faqat shartnomadan yozilgan soxta server bilan sinalgan), haqiqiy `assembleRelease` va qurilmadagi 1–9 qadamlar — bu yerda Android SDK / Google Maven
 mavjud emas edi. Loyiha hali Android Studio'da birinchi marta yig'ilmagan, shuning uchun birinchi build'da
 kompilyatsiya yoki bog'liqlik versiyasi xatolari chiqishi mumkin.

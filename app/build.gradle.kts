@@ -64,7 +64,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "API_GATEWAY_URL", q(env("DEBUG_API_GATEWAY_URL", env("API_GATEWAY_URL", "https://api.lokmago.uz/"))))
+            buildConfigField("String", "API_GATEWAY_URL", q(env("DEBUG_API_GATEWAY_URL", env("API_GATEWAY_URL", "https://restoran-api.lokma.uz/"))))
             buildConfigField("String", "SOCKET_URL", q(env("DEBUG_SOCKET_URL", if (env("DEBUG_API_GATEWAY_URL").isNotEmpty()) "" else env("SOCKET_URL"))))
             buildConfigField("String", "API_GATEWAY_PASSWORD", q(env("DEBUG_API_GATEWAY_PASSWORD", env("API_GATEWAY_PASSWORD"))))
         }

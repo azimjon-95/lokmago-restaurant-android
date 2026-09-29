@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Production endpoints are public constants. The Gradle release guard rejects anything else.
-      API_GATEWAY_URL: https://api.lokmago.uz
-      SOCKET_URL: https://api.lokmago.uz
+      API_GATEWAY_URL: https://restoran-api.lokma.uz
+      SOCKET_URL: https://restoran-api.lokma.uz
       API_PATH_PREFIX: restaurant/v1/
       SOCKET_PATH: /socket.io/
       API_GATEWAY_PASSWORD: ${{ secrets.API_GATEWAY_PASSWORD }}

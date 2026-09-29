@@ -10,7 +10,7 @@ val releaseInputs = project.extra["lokmago.releaseInputs"] as Map<String, String
 @Suppress("UNCHECKED_CAST")
 val envFileKeys = project.extra["lokmago.envFileKeys"] as Set<String>
 
-val prodHost = "api.lokmago.uz"
+val prodHost = "restoran-api.lokma.uz"
 // Names that belong to the SERVER. If one is found in env.properties something was pasted in the wrong file.
 val forbiddenKey = Regex("(?i)(mongo|jwt|click|paynet|cloudinary|service[_-]?account|private[_-]?key|webhook|(^|_)secret($|_))")
 // Values that must never ship in a production APK.

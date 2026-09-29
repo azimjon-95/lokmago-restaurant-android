@@ -5,7 +5,7 @@
 # no server-secret patterns. Exit code != 0 means: do NOT ship this APK.
 set -uo pipefail
 APK="${1:?usage: verify-apk.sh <apk>}"
-PROD_HOST="${PROD_HOST:-api.lokmago.uz}"
+PROD_HOST="${PROD_HOST:-restoran-api.lokma.uz}"
 fail=0; bad() { echo "FAIL: $*"; fail=1; }; ok() { echo "ok:   $*"; }
 [ -f "$APK" ] || { echo "no such file: $APK"; exit 2; }
 
