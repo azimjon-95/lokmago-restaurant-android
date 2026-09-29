@@ -1,5 +1,5 @@
 name: Release APK
-# Manual only. Builds a SIGNED production APK, verifies it, and uploads it as an artifact.
+# Manual only. Builds a SIGNED production APK + AAB (Google Play needs the AAB), verifies them, uploads both as artifacts.
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
 #   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD   (see scripts/generate-keystore.sh)
 #   GOOGLE_SERVICES_JSON_BASE64                                   (Firebase console -> base64 -w0 google-services.json)
@@ -50,11 +50,23 @@ jobs:
         run: ./gradlew :app:assembleRelease --no-daemon
       - name: Verify APK (signature, production host, no secrets)
         run: REQUIRE_APKSIGNER=1 scripts/verify-apk.sh app/build/outputs/apk/release/app-release.apk
+      - name: Bundle release (AAB for Google Play)
+        run: ./gradlew :app:bundleRelease --no-daemon
+      - name: Verify AAB (signature, production host, no test hosts)
+        run: |
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$AAB" | grep -q "jar verified" || { echo "::error::AAB signature invalid"; exit 1; }
+          T=$(mktemp -d); unzip -q "$AAB" -d "$T"
+          grep -aq "restoran-api.lokma.uz" "$T"/base/dex/*.dex || { echo "::error::production host missing in AAB"; exit 1; }
+          if grep -aEq "localhost|127\.0\.0\.1|10\.0\.2\.2|api\.example\.com|ngrok" "$T"/base/dex/*.dex; then echo "::error::test endpoint found in AAB"; exit 1; fi
+          echo "AAB OK"
 
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-${{ inputs.version_name }}-${{ inputs.version_code }}
-          path: app/build/outputs/apk/release/app-release.apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
       - name: Remove key material
         if: always()

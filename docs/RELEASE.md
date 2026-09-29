@@ -37,6 +37,8 @@ scripts/verify-apk.sh app/build/outputs/apk/release/app-release.apk
 
 Natija: `app/build/outputs/apk/release/app-release.apk` (imzolangan).
 
+**Google Play uchun AAB:** `./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`. Play Console'ga faqat AAB yuklanadi (*Play App Signing* yoqilgan bo'lsin). Xuddi shu release guard AAB'ga ham qo'llanadi.
+
 **Release guard** (`gradle/release-validation.gradle.kts`) quyidagilar bo'lsa build'ni rad etadi:
 API/Socket URL `https://restoran-api.lokma.uz` emas (http, boshqa host, port, localhost/10.0.2.2/example/test/staging),
 `SOCKET_PATH`/`API_PATH_PREFIX` noto'g'ri, `VERSION_CODE`/`VERSION_NAME` aniq berilmagan, keystore yo'q yoki
