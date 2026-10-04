@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.alert.AlertController
 import uz.lokmago.restaurant.data.local.SessionStore
+import uz.lokmago.restaurant.data.repo.AuthRepository
 import uz.lokmago.restaurant.data.remote.LokmaApi
 import uz.lokmago.restaurant.data.remote.dto.VersionDto
 import uz.lokmago.restaurant.realtime.*
@@ -21,6 +22,7 @@ class AppViewModel @Inject constructor(
     socket: SocketManager,
     private val alert: AlertController,
     private val api: LokmaApi,
+    private val auth: AuthRepository,
 ) : ViewModel() {
 
     val session = sessionStore.session
@@ -60,6 +62,8 @@ class AppViewModel @Inject constructor(
     fun minimize() { hidden.value = true }
     fun showAlert() { hidden.value = false }
     fun sync() { viewModelScope.launch { coordinator.syncPending() } }
+    /** Sliding session: a restaurant that keeps using the app is never asked for its password again. */
+    fun refreshSession() { viewModelScope.launch { auth.refreshIfStale() } }
     fun logout() { viewModelScope.launch { coordinator.logout() } }
 
     suspend fun updatePolicy(): VersionDto.AndroidVersion? = runCatching { api.version().android }.getOrNull()

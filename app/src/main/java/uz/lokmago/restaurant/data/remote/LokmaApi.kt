@@ -5,6 +5,8 @@ import uz.lokmago.restaurant.data.remote.dto.*
 
 interface LokmaApi {
     @POST("auth/login") suspend fun login(@Body body: LoginRequest): LoginResponse
+    /** Sliding session: trades the current (still valid) token for a fresh one. */
+    @POST("auth/refresh") suspend fun refresh(): RefreshResponse
 
     @GET("orders/pending") suspend fun pending(): List<OrderDto>
     @GET("orders") suspend fun orders(@Query("status") status: String?, @Query("limit") limit: Int = 50): List<OrderDto>

@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         vm.sync()                                           // pending-orders recovery on every foreground
+        vm.refreshSession()                                 // keep the login alive (at most once a day)
         lifecycleScope.launch { policy = vm.updatePolicy(); updater.check(policy) }
     }
 

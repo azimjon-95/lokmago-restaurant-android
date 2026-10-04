@@ -5,7 +5,8 @@ import uz.lokmago.restaurant.domain.*
 
 @Serializable data class LoginRequest(val login: String, val password: String)
 @Serializable data class RestaurantDto(val id: String, val name: String, val cuisine: String? = null, val logoUrl: String? = null)
-@Serializable data class UserDto(val id: String, val login: String, val role: String? = null)
+@Serializable data class UserDto(val id: String, val login: String = "", val role: String? = null)
+@Serializable data class RefreshResponse(val token: String)
 @Serializable data class LoginResponse(val token: String, val restaurant: RestaurantDto, val user: UserDto)
 
 @Serializable data class OrderItemDto(

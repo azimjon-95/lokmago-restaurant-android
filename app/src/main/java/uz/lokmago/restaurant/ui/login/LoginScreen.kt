@@ -1,14 +1,21 @@
 package uz.lokmago.restaurant.ui.login
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,8 +38,15 @@ data class LoginUi(val loading: Boolean = false, val error: String? = null)
 @HiltViewModel
 class LoginViewModel @Inject constructor(private val auth: AuthRepository) : ViewModel() {
     val ui = MutableStateFlow(LoginUi())
+
+    /** Pre-fills the form after a logout / expired session. Only the login NAME is remembered, never the password. */
+    val lastLogin: String = auth.lastLogin
+
+    fun clearError() { if (ui.value.error != null) ui.value = ui.value.copy(error = null) }
+
     fun login(login: String, password: String) {
-        if (login.isBlank() || password.isBlank()) { ui.value = LoginUi(error = "Restoran ID va PIN kodni kiriting"); return }
+        if (ui.value.loading) return   // keyboard "Done" + button tap, or a double tap
+        if (login.isBlank() || password.isBlank()) { ui.value = LoginUi(error = "Login va parolni kiriting"); return }
         viewModelScope.launch {
             ui.value = LoginUi(loading = true)
             ui.value = try { auth.login(login, password); LoginUi() } catch (e: AppError) { LoginUi(error = e.message) }
@@ -43,25 +57,38 @@ class LoginViewModel @Inject constructor(private val auth: AuthRepository) : Vie
 @Composable
 fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
-    var login by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
+    // rememberSaveable: survives rotation / process death while typing
+    var login by rememberSaveable { mutableStateOf(vm.lastLogin) }
+    var pass by rememberSaveable { mutableStateOf("") }
+    var showPass by rememberSaveable { mutableStateOf(false) }
+    val focus = LocalFocusManager.current
     val colors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = Lg.Green, unfocusedBorderColor = Lg.Line, focusedContainerColor = Lg.Card, unfocusedContainerColor = Lg.Card,
         focusedTextColor = Lg.Text, unfocusedTextColor = Lg.Text, cursorColor = Lg.Green,
         focusedLabelColor = Lg.Green, unfocusedLabelColor = Lg.Muted)
+    fun submit() { focus.clearFocus(); vm.login(login, pass) }
 
     Column(Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         LgIcon(R.drawable.ic_chef_hat, Lg.Orange, 72.dp)
         Spacer(Modifier.height(10.dp))
         Text("LokmaGo Restoran", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Restoran ID va PIN kod bilan kiring", color = Lg.Muted, fontSize = 14.sp)
+        Text("Restoran login va paroli bilan kiring", color = Lg.Muted, fontSize = 14.sp)
         Spacer(Modifier.height(28.dp))
-        OutlinedTextField(login, { login = it }, Modifier.fillMaxWidth(), label = { Text("Restoran ID") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large)
+        OutlinedTextField(login, { login = it; vm.clearError() }, Modifier.fillMaxWidth(), label = { Text("Login") }, singleLine = true,
+            colors = colors, shape = MaterialTheme.shapes.large,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }))
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(pass, { pass = it }, Modifier.fillMaxWidth(), label = { Text("PIN kod") }, singleLine = true, colors = colors, shape = MaterialTheme.shapes.large,
-            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+        OutlinedTextField(pass, { pass = it; vm.clearError() }, Modifier.fillMaxWidth(), label = { Text("Parol") }, singleLine = true,
+            colors = colors, shape = MaterialTheme.shapes.large,
+            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = { TextButton(onClick = { showPass = !showPass }) { Text(if (showPass) "Yashirish" else "Ko'rsatish", color = Lg.Muted, fontSize = 12.sp) } },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { submit() }))
         ui.error?.let { Text(it, color = Lg.Red, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp)) }
         Spacer(Modifier.height(20.dp))
-        PrimaryButton("Kirish", loading = ui.loading) { vm.login(login, pass) }
+        PrimaryButton("Kirish", loading = ui.loading) { submit() }
+        Spacer(Modifier.height(14.dp))
+        Text("Bir marta kirsangiz, ilova sizni eslab qoladi.", color = Lg.Muted, fontSize = 12.sp)
     }
 }

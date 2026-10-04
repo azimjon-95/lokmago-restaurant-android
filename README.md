@@ -12,6 +12,10 @@ gradle wrapper && ./gradlew :app:testDebugUnitTest :app:assembleDebug
 
 `google-services.json` bo'lmasa ilova baribir yig'iladi, faqat FCM push o'chiq bo'ladi (Socket.IO ishlayveradi).
 
+## Kirish va sessiya
+
+Restoran **login + parol** bilan bir marta kiradi. Token shifrlangan xotirada (Android Keystore) saqlanadi, ilova har safar ochilganda (kuniga ko'pi bilan bir marta) yangilanadi, shuning uchun ishlatilayotgan ilova parol so'ramaydi. Parol telefonda **saqlanmaydi**; chiqishdan keyin faqat login nomi maydonga qaytadi. Ovoz: [docs/SOUND.md](docs/SOUND.md).
+
 ## Release APK
 
 Production imzolangan APK, release guard va qabul tekshiruvi: **[docs/RELEASE.md](docs/RELEASE.md)**. Qisqacha: `./gradlew :app:assembleRelease` (yoki Actions → *Release APK*).

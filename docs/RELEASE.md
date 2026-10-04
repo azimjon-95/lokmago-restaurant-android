@@ -56,7 +56,8 @@ Repo public bo'lgani uchun artifact ham ko'rinishi mumkin — shu sabab gateway 
 
 | # | Tekshiruv | Kutilgan natija |
 |---|---|---|
-| 1 | Login: Restoran ID + PIN (to'g'ri / noto'g'ri; 3 xato PIN) | to'g'ri → Bosh sahifa; noto'g'ri → xato; 3 xatodan keyin «PIN vaqtincha bloklandi» |
+| 1 | Login + parol (to'g'ri / noto'g'ri; ko'p xato) | to'g'ri → Bosh sahifa; noto'g'ri → «Login yoki parol noto'g'ri»; ko'p xatodan keyin «Kirish vaqtincha bloklandi» |
+| 1b | Sessiya: ilovani yopib qayta oching, telefonni qayta yoqing | parol so'ralmaydi; chiqish (logout) qilsangiz login maydoni oldingi login bilan to'ladi |
 | 2 | Restoran izolyatsiyasi: A restoran login qilib, B restoran orderini so'rash (`curl` bilan A tokeni + B order id) | `404`, ilovada B ma'lumoti yo'q |
 | 3 | API: `Bosh sahifa`, `Buyurtmalar`, `Hisobot` yuklanadi | ma'lumot keladi, 401 yo'q |
 | 4 | Socket.IO: ilova ochiq, yangi buyurtma yaratish | to'liq ekranli alert ≤ 2 s |

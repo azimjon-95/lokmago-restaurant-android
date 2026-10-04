@@ -8,9 +8,9 @@ sealed class AppError(message: String) : Exception(message) {
     class Offline : AppError("Internet yo'q. Ulanishni tekshiring — buyurtma holati o'zgarmadi.")
     class AlreadyHandled : AppError("Buyurtma allaqachon qabul qilingan")
     class NotFound : AppError("Buyurtma topilmadi")
-    class Unauthorized : AppError("Restoran ID yoki PIN noto'g'ri")
+    class Unauthorized : AppError("Login yoki parol noto'g'ri")
     class TooEarly : AppError("Hali erta. Kuryer yetkazishi uchun biroz vaqt bering, keyin qayta urinib ko'ring.")
-    class Blocked(seconds: Int?) : AppError("PIN vaqtincha bloklandi. ${seconds ?: 30} soniyadan keyin urinib ko'ring.")
+    class Blocked(seconds: Int?) : AppError("Kirish vaqtincha bloklandi. ${seconds ?: 30} soniyadan keyin urinib ko'ring.")
     class Busy : AppError("Server band. Birozdan so'ng qayta urinib ko'ring.")
     class Server(code: Int) : AppError("Serverda xatolik ($code). Birozdan so'ng qayta urinib ko'ring.")
 }
@@ -30,9 +30,11 @@ suspend fun <T> apiCall(block: suspend () -> T): T = try {
         401 -> AppError.Unauthorized()
         403, 404 -> AppError.NotFound()
         409 -> if (code == "confirm_too_early") AppError.TooEarly() else AppError.AlreadyHandled()
-        429 -> if (code == "pin_blocked") AppError.Blocked(body?.optInt("retryAfter", -1)?.takeIf { it > 0 }) else AppError.Busy()
+        429 -> if (code == "pin_blocked" || code == "login_blocked") AppError.Blocked(body?.optInt("retryAfter", -1)?.takeIf { it > 0 }) else AppError.Busy()
         else -> AppError.Server(e.code())
     }
 } catch (e: IOException) {
     throw AppError.Offline()
+} catch (e: kotlinx.serialization.SerializationException) {
+    throw AppError.Server(502) // an unexpected reply must show a message, not crash the screen
 }

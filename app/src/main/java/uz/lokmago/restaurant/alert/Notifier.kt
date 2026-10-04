@@ -29,7 +29,10 @@ class Notifier @Inject constructor(
     private val nm = ctx.getSystemService(NotificationManager::class.java)
 
     fun ensureChannels() {
-        val sound = Uri.parse("android.resource://${ctx.packageName}/${R.raw.order_alert}")
+        // By NAME, not by numeric id: ids change between builds, so a channel created earlier would keep a dead URI.
+        // Replacing res/raw/order_alert.* therefore needs no code change.
+        val sound = Uri.parse("android.resource://${ctx.packageName}/raw/order_alert")
+        nm.deleteNotificationChannel("orders_new_v1") // old channel pointed at a numeric resource id
         val attrs = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
@@ -134,7 +137,7 @@ class Notifier @Inject constructor(
     private fun idFor(orderId: String) = orderId.hashCode().let { if (it == SERVICE_ID) it + 1 else it }
 
     companion object {
-        const val CH_ORDERS = "orders_new_v1"
+        const val CH_ORDERS = "orders_new_v2" // a channel's sound is frozen once created: bump this when the sound itself changes
         const val CH_ALERT = "alert_service_v1"
         const val SERVICE_ID = 4242
     }

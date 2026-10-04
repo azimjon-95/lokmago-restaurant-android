@@ -28,6 +28,10 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     val session: StateFlow<Session?> = _session.asStateFlow()
     val token: String? get() = prefs.getString(K_TOKEN, null)
 
+    /** The login name (never the password) survives logout/expiry so the login form can be pre-filled. */
+    val lastLogin: String get() = prefs.getString(K_LAST_LOGIN, "") ?: ""
+    val tokenAgeMs: Long get() = System.currentTimeMillis() - prefs.getLong(K_ISSUED, 0L)
+
     /** Stable per-install id so the backend can de-duplicate FCM tokens per device. */
     val deviceId: String
         get() = prefs.getString(K_DEVICE, null) ?: UUID.randomUUID().toString().also { prefs.edit().putString(K_DEVICE, it).apply() }
@@ -37,13 +41,21 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
         set(v) = prefs.edit().putString(K_FCM, v).apply()
 
     fun save(s: Session) {
-        prefs.edit().putString(K_TOKEN, s.token).putString(K_RNAME, s.restaurantName).putString(K_LOGIN, s.login).apply()
+        prefs.edit().putString(K_TOKEN, s.token).putString(K_RNAME, s.restaurantName).putString(K_LOGIN, s.login)
+            .putString(K_LAST_LOGIN, s.login).putLong(K_ISSUED, System.currentTimeMillis()).apply()
         _session.value = s
+    }
+
+    /** Sliding refresh: same restaurant, fresh expiry. */
+    fun updateToken(token: String) {
+        val cur = _session.value ?: return
+        prefs.edit().putString(K_TOKEN, token).putLong(K_ISSUED, System.currentTimeMillis()).apply()
+        _session.value = cur.copy(token = token)
     }
 
     /** Called on 401 or logout: token gone, UI returns to login. */
     fun expire() {
-        prefs.edit().remove(K_TOKEN).remove(K_RNAME).remove(K_LOGIN).apply()
+        prefs.edit().remove(K_TOKEN).remove(K_RNAME).remove(K_LOGIN).remove(K_ISSUED).apply() // K_LAST_LOGIN stays on purpose
         _session.value = null
     }
 
@@ -55,5 +67,6 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     private companion object {
         const val K_TOKEN = "token"; const val K_RNAME = "rname"; const val K_LOGIN = "login"
         const val K_DEVICE = "device"; const val K_FCM = "fcm"
+        const val K_LAST_LOGIN = "last_login"; const val K_ISSUED = "issued_at"
     }
 }
