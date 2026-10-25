@@ -1,64 +1,112 @@
 package uz.lokmago.restaurant.data.remote.dto
 
+import java.time.Instant
+import kotlin.math.roundToLong
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import uz.lokmago.restaurant.domain.*
 
-@Serializable data class LoginRequest(val login: String, val password: String)
-@Serializable data class RestaurantDto(val id: String, val name: String, val cuisine: String? = null, val logoUrl: String? = null)
-@Serializable data class UserDto(val id: String, val login: String = "", val role: String? = null)
-@Serializable data class RefreshResponse(val token: String)
-@Serializable data class LoginResponse(val token: String, val restaurant: RestaurantDto, val user: UserDto)
+/*
+ * lakmago-server javoblari — admin panel (restoran roli) bilan AYNAN BIR XIL endpointlar va shakllar.
+ * Server maydon nomlari (`_id`, `dailyNumber`, `unitPrice`, `customer.name` ...) shu yerda ilova
+ * domeniga o'giriladi; UI va navbat mantiqi o'zgarmaydi. Noma'lum maydonlar e'tiborsiz (AppModule: ignoreUnknownKeys).
+ */
 
-@Serializable data class OrderItemDto(
-    val name: String, val quantity: Int, val price: Long, val imageUrl: String? = null,
+// ---- Kirish: POST /api/auth/login (admin panel bilan bir xil) ----
+@Serializable data class LoginRequest(val login: String, val password: String)
+@Serializable data class UserDto(
+    @SerialName("_id") val id: String = "",
+    val login: String = "",
+    val role: String? = null,
+    val restaurantId: String? = null,
+    val firstName: String? = null,
 )
+@Serializable data class LoginResponse(val token: String, val user: UserDto)
+/** POST /api/panel/session/refresh */
+@Serializable data class RefreshResponse(val token: String)
+/** GET /api/panel/me — restoran profili (faqat kerakli maydonlar) */
+@Serializable data class RestaurantDto(@SerialName("_id") val id: String = "", val name: String = "")
+
+// ---- Buyurtma: /api/panel/orders... (services/panelOrderView.js → toPanelOrder) ----
+@Serializable data class SelectedOptionDto(val name: String = "", val variant: Boolean? = null)
+@Serializable data class OrderItemDto(
+    val name: String = "",
+    val quantity: Int = 1,
+    val unitPrice: Double = 0.0,
+    val selectedOptions: List<SelectedOptionDto> = emptyList(),
+    val note: String? = null,
+)
+@Serializable data class CustomerDto(val name: String? = null, val phone: String? = null)
 
 @Serializable data class OrderDto(
-    val id: String,
-    val number: String,
-    val status: String,
-    val createdAt: Long,                       // epoch millis (UTC)
+    @SerialName("_id") val id: String,
+    val dailyNumber: Int? = null,
+    val status: String = "unknown",
+    val createdAt: String? = null,               // ISO-8601 (UTC)
     val fulfillment: String = "delivery",
-    val paymentMethod: String = "cash",
-    val itemsCount: Int = 0,
-    val subtotal: Long = 0,
-    val deliveryFee: Long = 0,
-    val total: Long = 0,
-    val customerName: String? = null,
-    val customerPhone: String? = null,
+    val paymentMethod: String = "cash",          // cash | click | payme | paynet | uzum
+    val subtotal: Double = 0.0,
+    val deliveryFee: Double = 0.0,
+    val total: Double = 0.0,
+    val customer: CustomerDto? = null,
+    val phone: String? = null,
     val address: String? = null,
-    val lat: Double? = null,
-    val lng: Double? = null,
+    val addressLat: Double? = null,
+    val addressLng: Double? = null,
     val items: List<OrderItemDto> = emptyList(),
+    /** PATCH status javobida: false = buyurtma allaqachon shu holatda edi (boshqa telefon ulgurgan). */
+    val changed: Boolean? = null,
 ) {
+    /** Soketdagi qisqa `{ _id, status }` (to'liq ko'rinish olinmaganda) — to'liq buyurtma emas. */
+    val isPartial: Boolean get() = createdAt == null
+
     fun toDomain() = Order(
-        id = id, number = number, status = OrderStatus.from(status), createdAtMillis = createdAt,
-        fulfillment = Fulfillment.from(fulfillment), payment = Payment.from(paymentMethod),
-        itemsCount = if (itemsCount > 0) itemsCount else items.size,
-        subtotal = subtotal, deliveryFee = deliveryFee, total = total,
-        customerName = customerName, customerPhone = customerPhone, address = address, lat = lat, lng = lng,
-        items = items.map { OrderItem(it.name, it.quantity, it.price, it.imageUrl) },
+        id = id,
+        // Admin panel va bot bilan bir xil raqam: kunlik raqam, bo'lmasa ID oxirgi 4 belgisi (services/orderNumber.js)
+        number = dailyNumber?.toString() ?: id.takeLast(4).uppercase(),
+        status = OrderStatus.from(status),
+        createdAtMillis = createdAt?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() } ?: System.currentTimeMillis(),
+        fulfillment = Fulfillment.from(fulfillment),
+        // Karta orqali (Click/Payme/Paynet/Uzum) — "Karta". Faqat "cash" naqd.
+        payment = if (paymentMethod.equals("cash", ignoreCase = true)) Payment.CASH else Payment.CARD,
+        itemsCount = items.sumOf { it.quantity.coerceAtLeast(0) },
+        subtotal = subtotal.roundToLong(),
+        deliveryFee = deliveryFee.roundToLong(),
+        total = total.roundToLong(),
+        customerName = customer?.name?.takeIf { it.isNotBlank() },
+        customerPhone = (phone?.takeIf { it.isNotBlank() } ?: customer?.phone)?.takeIf { it.isNotBlank() },
+        address = address?.takeIf { it.isNotBlank() },
+        lat = addressLat,
+        lng = addressLng,
+        items = items.map { it.toDomain() },
     )
 }
 
-@Serializable data class StatusRequest(val status: String)
-/** "delivered" | "in_progress" — see OrderRepository.reminderAck / backend §"Buyurtmani yakunlashni nazorat qilish". */
-@Serializable data class ReminderAckRequest(val action: String)
-/** Minimal Socket.IO payload for `order:delivery-reminder` — intentionally NOT a full order (TZ §22). */
-@Serializable data class ReminderEventDto(val orderId: String, val reminderCount: Int)
-@Serializable data class DeviceRequest(val token: String, val deviceId: String, val platform: String = "android")
-
-@Serializable data class StatsDto(
-    val ordersCount: Int = 0, val ordersDelta: Int = 0,
-    val revenue: Long = 0, val revenueDeltaPct: Int = 0,
-    val waiting: Int = 0,
-    val cashCount: Int = 0, val cardCount: Int = 0,
-    val cashRevenue: Long = 0, val cardRevenue: Long = 0,
-    val hourly: List<Long> = List(24) { 0L },
-) {
-    fun toDomain() = DayStats(ordersCount, ordersDelta, revenue, revenueDeltaPct, waiting, cashCount, cardCount, cashRevenue, cardRevenue, hourly)
+/** Oshxona AYNAN qaysi hajmni tayyorlashini bilsin: "Lorus Set (6 Kishilik Set)". */
+fun OrderItemDto.toDomain(): OrderItem {
+    val opts = selectedOptions.map { it.name.trim() }.filter { it.isNotEmpty() }
+    val title = if (opts.isEmpty()) name else "$name (${opts.joinToString(", ")})"
+    return OrderItem(title, quantity, unitPrice.roundToLong(), null)
 }
 
+@Serializable data class StatusRequest(val status: String)
+/** Soket `order:delivery-reminder` (services/restaurantReminders.js) — to'liq buyurtma emas. */
+@Serializable data class ReminderEventDto(val orderId: String, val reminderCount: Int = 1)
+
+// ---- Hisobot: GET /api/panel/stats?from=&to= (controllers/restaurantApp.js) ----
+@Serializable data class MoneyCount(val count: Int = 0, val total: Double = 0.0)
+@Serializable data class PaymentSplit(val cash: MoneyCount = MoneyCount(), val card: MoneyCount = MoneyCount())
+@Serializable data class CreatedStats(val count: Int = 0, val byStatus: Map<String, Int> = emptyMap())
+@Serializable data class DeliveredStats(val count: Int = 0, val total: Double = 0.0, val byPayment: PaymentSplit = PaymentSplit())
+@Serializable data class PanelStatsDto(val created: CreatedStats = CreatedStats(), val delivered: DeliveredStats = DeliveredStats())
+
+/** GET /api/panel/orders/history */
+@Serializable data class HistoryPage(val items: List<OrderDto> = emptyList(), val nextCursor: String? = null, val hasMore: Boolean = false)
+
+/**
+ * Ilova versiyasi siyosati. Serverda alohida endpoint yo'q — majburiy yangilanish faqat Google Play
+ * "update priority" orqali (UpdateManager). Tur UpdateManager imzosi uchun saqlangan.
+ */
 @Serializable data class VersionDto(val android: AndroidVersion = AndroidVersion()) {
     @Serializable data class AndroidVersion(
         val minimumVersion: String = "0.0.0",
@@ -66,5 +114,3 @@ import uz.lokmago.restaurant.domain.*
         val forceUpdate: Boolean = false,
     )
 }
-
-@Serializable data class ErrorDto(val error: String? = null, val code: String? = null)

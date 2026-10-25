@@ -25,12 +25,12 @@ Before submission, publish a restaurant-app privacy policy that names the legal 
 
 ## Remaining release requirements
 
-- TLS for `restoran-api.lokma.uz` is configured with an auto-renewing Let's Encrypt certificate; `/health` and `/restaurant/v1/app/version` were verified over HTTPS.
+- The app talks directly to lakmago-server (`https://apilokma.poppolizol.uz/api/`, same login + password as the admin panel). No gateway. Verify `/health` over HTTPS before submission.
 - Configure APNs and backend push delivery if background order alerts are required. This first iOS version polls for new orders while the app is open.
 - Apple Development signing is configured for device testing.
 - Create an Apple Distribution signing identity/profile before exporting an App Store archive.
 - Current Release archive is at `ios/build/LokmaRestaurant.xcarchive`; it was built without signing and cannot be uploaded until Distribution signing is configured.
-- Before local Xcode builds, run `./ios/sync-config.sh` to load the gateway header/password from the ignored `env.properties` file.
+- Optional: run `./ios/sync-config.sh` to take `API_URL` from the ignored `env.properties` (otherwise the default server in `Config.swift` is used).
 - Create the App Store Connect app record, verify account ownership and legal details, and answer the App Privacy questionnaire based on the backend's actual practices.
 - Capture required iPhone screenshots on a real device and provide public support/privacy URLs.
 - Validate login, order transitions, reports, and offline/error behavior against a test restaurant before release.

@@ -10,7 +10,8 @@ val releaseInputs = project.extra["lokmago.releaseInputs"] as Map<String, String
 @Suppress("UNCHECKED_CAST")
 val envFileKeys = project.extra["lokmago.envFileKeys"] as Set<String>
 
-val prodHost = "restoran-api.lokma.uz"
+// lakmago-server API domeni (admin panel ishlatadigan o'sha). Boshqa domenga ko'chsa: PROD_API_HOST env.
+val prodHost = releaseInputs["PROD_API_HOST"].orEmpty().ifBlank { "apilokma.poppolizol.uz" }
 // Names that belong to the SERVER. If one is found in env.properties something was pasted in the wrong file.
 val forbiddenKey = Regex("(?i)(mongo|jwt|click|paynet|cloudinary|service[_-]?account|private[_-]?key|webhook|(^|_)secret($|_))")
 // Values that must never ship in a production APK.
@@ -35,10 +36,10 @@ tasks.register("validateReleaseConfig") {
         val errors = mutableListOf<String>()
         fun v(k: String) = releaseInputs[k].orEmpty()
 
-        checkUrl("API_GATEWAY_URL", v("API_GATEWAY_URL"), errors, allowEmpty = false)
-        checkUrl("SOCKET_URL", v("SOCKET_URL"), errors, allowEmpty = true)   // empty => derived from API_GATEWAY_URL
+        checkUrl("API_URL", v("API_URL"), errors, allowEmpty = false)
+        checkUrl("SOCKET_URL", v("SOCKET_URL"), errors, allowEmpty = true)   // empty => derived from API_URL
         if (!v("SOCKET_PATH").startsWith("/")) errors += "SOCKET_PATH must start with '/' (got '${v("SOCKET_PATH")}')"
-        if (v("API_PATH_PREFIX").isBlank() || "://" in v("API_PATH_PREFIX")) errors += "API_PATH_PREFIX must be a relative path such as restaurant/v1/"
+        if (v("API_PATH_PREFIX").isBlank() || "://" in v("API_PATH_PREFIX")) errors += "API_PATH_PREFIX must be a relative path such as api/"
 
         // Versioning is env-driven and must be explicit, otherwise two releases could share a versionCode.
         val vc = v("VERSION_CODE").toIntOrNull()
@@ -58,6 +59,11 @@ tasks.register("validateReleaseConfig") {
         }
         for (k in listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")) if (v(k).isBlank()) errors += "$k is required for release signing"
 
+        // Olib tashlangan API gateway sozlamalari qolib ketmasin (ilova lakmago-serverga to'g'ridan-to'g'ri ulanadi).
+        envFileKeys.filter { it.startsWith("API_GATEWAY_") || it.startsWith("DEBUG_API_GATEWAY_") }.forEach {
+            errors += "env.properties contains '$it' — the API gateway was removed; use API_URL (see env.properties.example)"
+        }
+
         // Server secrets must not be near the client build at all.
         envFileKeys.filter { forbiddenKey.containsMatchIn(it) }.forEach {
             errors += "env.properties contains '$it' — that is a SERVER secret and must never be part of the Android project"
@@ -69,7 +75,7 @@ tasks.register("validateReleaseConfig") {
                     "\nSee env.properties.example and docs/RELEASE.md."
             )
         }
-        logger.lifecycle("Release configuration OK: api=${v("API_GATEWAY_URL")} versionCode=$vc versionName=${v("VERSION_NAME")}")
+        logger.lifecycle("Release configuration OK: api=${v("API_URL")} versionCode=$vc versionName=${v("VERSION_NAME")}")
     }
 }
 

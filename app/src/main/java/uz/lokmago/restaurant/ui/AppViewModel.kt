@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.alert.AlertController
 import uz.lokmago.restaurant.data.local.SessionStore
 import uz.lokmago.restaurant.data.repo.AuthRepository
-import uz.lokmago.restaurant.data.remote.LokmaApi
 import uz.lokmago.restaurant.data.remote.dto.VersionDto
 import uz.lokmago.restaurant.realtime.*
 
@@ -21,7 +20,6 @@ class AppViewModel @Inject constructor(
     net: NetworkMonitor,
     socket: SocketManager,
     private val alert: AlertController,
-    private val api: LokmaApi,
     private val auth: AuthRepository,
 ) : ViewModel() {
 
@@ -66,5 +64,6 @@ class AppViewModel @Inject constructor(
     fun refreshSession() { viewModelScope.launch { auth.refreshIfStale() } }
     fun logout() { viewModelScope.launch { coordinator.logout() } }
 
-    suspend fun updatePolicy(): VersionDto.AndroidVersion? = runCatching { api.version().android }.getOrNull()
+    /** Serverda versiya siyosati endpointi yo'q — majburiy yangilanish faqat Play "update priority" (UpdateManager). */
+    suspend fun updatePolicy(): VersionDto.AndroidVersion? = null
 }

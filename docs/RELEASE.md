@@ -2,19 +2,18 @@
 
 ## 1. Xavfsizlik modeli (o'qing)
 
-* **APK ichidagi hamma narsa ochiq.** `API_GATEWAY_URL`, `SOCKET_URL` va `API_GATEWAY_PASSWORD` APK'dan
-  1 daqiqada chiqarib olinadi. Shuning uchun ular **secret emas** va backend xavfsizligi ularga tayanmaydi.
-  Gateway paroli — faqat qo'pol filtr (`GATEWAY_INBOUND_PASSWORD`, ixtiyoriy).
+* **APK ichidagi hamma narsa ochiq.** `API_URL` va `SOCKET_URL` APK'dan 1 daqiqada chiqarib olinadi — ularda
+  sir yo'q. Ilova lakmago-serverga to'g'ridan-to'g'ri ulanadi (admin panel bilan bir xil API); gateway/parol yo'q.
 * **Haqiqiy himoya backendda:** JWT (`Authorization: Bearer`) + `restaurantId` **tokenning ichidan** (`rid`),
-  klient hech qachon `restaurantId` yubormaydi. Har bir order/stats/device so'rovi shu `rid` bo'yicha
-  filtrlanadi, boshqa restoran orderi → `404`. Backend testlari buni tekshiradi
-  (`cross-restaurant isolation`, `concurrent accept`, socket xonalari tokendan aniqlanadi).
+  klient hech qachon `restaurantId` yubormaydi. Har bir order/stats so'rovi shu `rid` bo'yicha
+  filtrlanadi, boshqa restoran orderi → `404`. Socket xonasi ham tokendan aniqlanadi
+  (lakmago-server: `npm run test:restaurant-app`).
 * **APK'ga tushmaydigan narsalar:** MongoDB URI, JWT signing secret, Click/Paynet private kalitlari,
   Cloudinary secret, FCM service-account, webhook siri — bular faqat backend `.env`da. Android build ularni
   o'qimaydi ham; `env.properties`da bunday kalit topilsa release build **to'xtaydi**.
 * `google-services.json` (Firebase) APK ichiga tushadi — bu klient konfiguratsiyasi, secret emas.
-* Release build'da HTTP logging o'chiq, `Log.v/d/i` ProGuard bilan olib tashlanadi, `Authorization` va gateway
-  headerlari redakt qilinadi. Cleartext trafik manifestda o'chirilgan.
+* Release build'da HTTP logging o'chiq, `Log.v/d/i` ProGuard bilan olib tashlanadi, `Authorization`
+  headeri redakt qilinadi. Cleartext trafik manifestda o'chirilgan.
 
 ## 2. Bir martalik tayyorgarlik
 
@@ -40,15 +39,15 @@ Natija: `app/build/outputs/apk/release/app-release.apk` (imzolangan).
 **Google Play uchun AAB:** `./gradlew :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`. Play Console'ga faqat AAB yuklanadi (*Play App Signing* yoqilgan bo'lsin). Xuddi shu release guard AAB'ga ham qo'llanadi.
 
 **Release guard** (`gradle/release-validation.gradle.kts`) quyidagilar bo'lsa build'ni rad etadi:
-API/Socket URL `https://restoran-api.lokma.uz` emas (http, boshqa host, port, localhost/10.0.2.2/example/test/staging),
+API/Socket URL `https://<PROD_API_HOST>` (default `apilokma.poppolizol.uz`) emas (http, boshqa host, port, localhost/10.0.2.2/example/test/staging),
 `SOCKET_PATH`/`API_PATH_PREFIX` noto'g'ri, `VERSION_CODE`/`VERSION_NAME` aniq berilmagan, keystore yo'q yoki
 parollar bo'sh, `env.properties`da server-secret nomli kalit bor. Debug build faqat `DEBUG_*` kalitlarini
 o'qiydi — test server release'ga tushib qola olmaydi.
 
 **GitHub Actions:** *Actions → Release APK → Run workflow* (`version_code`, `version_name`). Secrets:
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `GOOGLE_SERVICES_JSON_BASE64`
-(+ ixtiyoriy `API_GATEWAY_PASSWORD`). Workflow imzo, host va secret-pattern tekshiruvidan o'tmasa artifact bermaydi.
-Repo public bo'lgani uchun artifact ham ko'rinishi mumkin — shu sabab gateway parolini secret deb hisoblamang.
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (+ ixtiyoriy `GOOGLE_SERVICES_JSON_BASE64`).
+Server domeni boshqa bo'lsa — repo *Variables* → `PROD_API_HOST`. Workflow imzo, host va secret-pattern tekshiruvidan
+o'tmasa artifact bermaydi. `env.properties`da eski `API_GATEWAY_*` kalitlari qolsa release build to'xtaydi.
 
 ## 4. Qurilmada qabul tekshiruvi (qo'lda; emulyator/telefon kerak)
 
@@ -70,7 +69,7 @@ Repo public bo'lgani uchun artifact ham ko'rinishi mumkin — shu sabab gateway 
 **Loglarda secret yo'qligini tekshirish** (yuqoridagi barcha qadamlardan keyin):
 
 ```bash
-adb logcat -d | grep -Ei "bearer |authorization|password|eyJ[A-Za-z0-9_-]{10,}\.|fcm.*token|x-gateway" && echo "LEAK!" || echo "clean"
+adb logcat -d | grep -Ei "bearer |authorization|password|eyJ[A-Za-z0-9_-]{10,}\.|fcm.*token" && echo "LEAK!" || echo "clean"
 ```
 
 ## 5. Nima tekshirilgan, nima yo'q (halollik uchun)

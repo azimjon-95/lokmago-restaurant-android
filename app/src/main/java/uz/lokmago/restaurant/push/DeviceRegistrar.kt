@@ -6,29 +6,26 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import uz.lokmago.restaurant.data.local.SessionStore
-import uz.lokmago.restaurant.data.remote.LokmaApi
-import uz.lokmago.restaurant.data.remote.dto.DeviceRequest
 
-/** Links / unlinks this phone's FCM token to the logged-in restaurant user (server-side). */
+/**
+ * FCM tokeni faqat telefonda saqlanadi. lakmago-serverda hozircha push (FCM) yuborish yo'q — buyurtmalar
+ * Socket.IO (`restaurant:<id>` xonasi) va ilova ochilganda/qayta ulanganda `pending` sinxronlashi orqali keladi.
+ * Server FCM qo'llab-quvvatlaganda tokenni shu yerdan yuborish kifoya (endpoint qo'shilgach).
+ */
 @Singleton
-class DeviceRegistrar @Inject constructor(private val api: LokmaApi, private val session: SessionStore) {
+class DeviceRegistrar @Inject constructor(private val session: SessionStore) {
 
     private suspend fun currentToken(): String? = runCatching {
         suspendCancellableCoroutine<String?> { c ->
             FirebaseMessaging.getInstance().token.addOnCompleteListener { c.resume(it.result) }
         }
-    }.getOrNull()   // Firebase not configured (no google-services.json) => push disabled, socket still works
+    }.getOrNull()   // Firebase sozlanmagan (google-services.json yo'q) — push o'chiq, soket ishlayveradi
 
     suspend fun register(token: String? = null) {
         val t = token ?: session.fcmToken ?: currentToken() ?: return
         session.fcmToken = t
-        if (session.token == null) return
-        runCatching { api.registerDevice(DeviceRequest(t, session.deviceId)) }
     }
 
-    /** Best effort: must be called BEFORE the JWT is discarded. */
-    suspend fun unregister() {
-        val t = session.fcmToken ?: return
-        runCatching { api.unregisterDevice(DeviceRequest(t, session.deviceId)) }
-    }
+    /** Chiqishda: serverda ro'yxat yo'q, faqat mahalliy holat. */
+    suspend fun unregister() = Unit
 }

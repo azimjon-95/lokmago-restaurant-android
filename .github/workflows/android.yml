@@ -8,8 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Optional. Debug builds fall back to https://api.lokmago.uz/ when unset. Fork PRs never receive secrets.
-      API_GATEWAY_PASSWORD: ${{ secrets.API_GATEWAY_PASSWORD }}
+      # Debug builds talk to lakmago-server (default https://apilokma.poppolizol.uz/api/). No secrets needed.
       VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4

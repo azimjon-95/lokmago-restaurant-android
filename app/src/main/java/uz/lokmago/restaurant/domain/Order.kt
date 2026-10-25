@@ -21,7 +21,7 @@ enum class OrderStatus(val api: String, val label: String) {
 enum class Fulfillment(val api: String, val label: String) {
     DELIVERY("delivery", "Yetkazib berish"),
     PICKUP("pickup", "Olib ketish"),
-    DINE_IN("dine_in", "Zalda");
+    DINE_IN("dinein", "Zalda");
 
     companion object {
         fun from(v: String?) = entries.firstOrNull { it.api.equals(v, true) } ?: DELIVERY

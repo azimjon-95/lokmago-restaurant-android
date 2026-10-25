@@ -2,8 +2,8 @@ name: Release APK
 # Manual only. Builds a SIGNED production APK + AAB (Google Play needs the AAB), verifies them, uploads both as artifacts.
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
 #   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD   (see scripts/generate-keystore.sh)
-#   GOOGLE_SERVICES_JSON_BASE64                                   (Firebase console -> base64 -w0 google-services.json)
-# Optional: API_GATEWAY_PASSWORD (only if the backend sets GATEWAY_INBOUND_PASSWORD)
+#   GOOGLE_SERVICES_JSON_BASE64 (optional)                        (Firebase console -> base64 -w0 google-services.json)
+# The app talks to lakmago-server directly (same account/JWT as the admin panel). No gateway secrets.
 on:
   workflow_dispatch:
     inputs:
@@ -16,11 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Production endpoints are public constants. The Gradle release guard rejects anything else.
-      API_GATEWAY_URL: https://restoran-api.lokma.uz
-      SOCKET_URL: https://restoran-api.lokma.uz
-      API_PATH_PREFIX: restaurant/v1/
+      # lakmago-server (admin panel bilan bir xil API). Boshqa domen bo'lsa: repo Variables -> PROD_API_HOST.
+      PROD_API_HOST: ${{ vars.PROD_API_HOST || 'apilokma.poppolizol.uz' }}
+      API_URL: https://${{ vars.PROD_API_HOST || 'apilokma.poppolizol.uz' }}
+      SOCKET_URL: https://${{ vars.PROD_API_HOST || 'apilokma.poppolizol.uz' }}
+      API_PATH_PREFIX: api/
       SOCKET_PATH: /socket.io/
-      API_GATEWAY_PASSWORD: ${{ secrets.API_GATEWAY_PASSWORD }}
       VERSION_CODE: ${{ inputs.version_code }}
       VERSION_NAME: ${{ inputs.version_name }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -39,9 +40,9 @@ jobs:
           GS_B64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
           [ -n "$KS_B64" ] || { echo "::error::KEYSTORE_BASE64 secret is missing"; exit 1; }
-          [ -n "$GS_B64" ] || { echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret is missing (release without FCM is not allowed)"; exit 1; }
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          echo "$GS_B64" | base64 -d > app/google-services.json
+          # FCM ixtiyoriy: lakmago-server hozircha push yubormaydi (buyurtmalar Socket.IO orqali keladi).
+          if [ -n "$GS_B64" ]; then echo "$GS_B64" | base64 -d > app/google-services.json; else echo "::warning::GOOGLE_SERVICES_JSON_BASE64 yo'q — FCM o'chiq build"; fi
           echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - name: Unit tests
@@ -49,7 +50,7 @@ jobs:
       - name: Assemble release (runs validateReleaseConfig first)
         run: ./gradlew :app:assembleRelease --no-daemon
       - name: Verify APK (signature, production host, no secrets)
-        run: REQUIRE_APKSIGNER=1 scripts/verify-apk.sh app/build/outputs/apk/release/app-release.apk
+        run: REQUIRE_APKSIGNER=1 PROD_HOST="$PROD_API_HOST" scripts/verify-apk.sh app/build/outputs/apk/release/app-release.apk
       - name: Bundle release (AAB for Google Play)
         run: ./gradlew :app:bundleRelease --no-daemon
       - name: Verify AAB (signature, production host, no test hosts)
@@ -57,7 +58,7 @@ jobs:
           AAB=app/build/outputs/bundle/release/app-release.aab
           jarsigner -verify "$AAB" | grep -q "jar verified" || { echo "::error::AAB signature invalid"; exit 1; }
           T=$(mktemp -d); unzip -q "$AAB" -d "$T"
-          grep -aq "restoran-api.lokma.uz" "$T"/base/dex/*.dex || { echo "::error::production host missing in AAB"; exit 1; }
+          grep -aq "$PROD_API_HOST" "$T"/base/dex/*.dex || { echo "::error::production host missing in AAB"; exit 1; }
           if grep -aEq "localhost|127\.0\.0\.1|10\.0\.2\.2|api\.example\.com|ngrok" "$T"/base/dex/*.dex; then echo "::error::test endpoint found in AAB"; exit 1; fi
           echo "AAB OK"
 

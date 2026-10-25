@@ -36,7 +36,7 @@ object AppModule {
         .addInterceptor(AuthInterceptor(session))
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
-            redactHeader("Authorization"); redactHeader(BuildConfig.API_GATEWAY_HEADER)
+            redactHeader("Authorization")
         })
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).writeTimeout(20, TimeUnit.SECONDS)
         .build()

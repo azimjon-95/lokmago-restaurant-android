@@ -12,9 +12,32 @@ gradle wrapper && ./gradlew :app:testDebugUnitTest :app:assembleDebug
 
 `google-services.json` bo'lmasa ilova baribir yig'iladi, faqat FCM push o'chiq bo'ladi (Socket.IO ishlayveradi).
 
-## Kirish va sessiya
+## Server va kirish
 
-Restoran **login + parol** bilan bir marta kiradi. Token shifrlangan xotirada (Android Keystore) saqlanadi, ilova har safar ochilganda (kuniga ko'pi bilan bir marta) yangilanadi, shuning uchun ishlatilayotgan ilova parol so'ramaydi. Parol telefonda **saqlanmaydi**; chiqishdan keyin faqat login nomi maydonga qaytadi. Ovoz: [docs/SOUND.md](docs/SOUND.md).
+Ilova **lakmago-server**ga to'g'ridan-to'g'ri ulanadi — admin panel ishlatadigan o'sha API (`/api/...`) va o'sha
+Socket.IO. Alohida gateway/BFF **yo'q**.
+
+Restoran **admin paneldagi o'sha login + parol** bilan kiradi (`POST /api/auth/login`). Admin yoki xodim akkaunti
+kira olmaydi — faqat restoranga bog'langan akkaunt. Token shifrlangan xotirada (Android Keystore) saqlanadi va
+kuniga ko'pi bilan bir marta yangilanadi (`POST /api/panel/session/refresh`), shuning uchun ishlatilayotgan ilova
+parol so'ramaydi. Parol telefonda **saqlanmaydi**. Akkaunt bloklansa yoki parol o'zgarsa — keyingi so'rovda 401 va
+ilova login ekraniga qaytadi. `restaurantId` clientdan hech qachon yuborilmaydi: server uni tokendan oladi.
+
+| Ilova | Server endpointi |
+|---|---|
+| Yangi buyurtmalar | `GET /api/panel/orders?status=pending` + Socket.IO `order:new` / `order:update` |
+| Qabul / holat | `PATCH /api/panel/orders/:id/status` (admin panel bilan bir xil qoidalar) |
+| Yetkazildi (yetkazib berish) | `POST /api/panel/orders/:id/confirm-delivered` (server vaqt shartini tekshiradi) |
+| Hisobot | `GET /api/panel/stats`, `GET /api/panel/orders/history` |
+| Eslatma | Socket.IO `order:delivery-reminder` |
+
+Socket.IO: handshake'da `auth: { token }` — server restoranni faqat **o'zining** `restaurant:<id>` xonasiga qo'shadi.
+
+Ovoz: [docs/SOUND.md](docs/SOUND.md).
+
+> **Push (FCM):** lakmago-server hozircha FCM yubormaydi. Buyurtmalar Socket.IO orqali keladi; ilova ochilganda va
+> qayta ulanganda kutilayotganlar serverdan sinxronlanadi. Ilova butunlay yopiq bo'lsa signal chalinmaydi (Telegram bot
+> xabarlari avvalgidek ishlaydi). FCM server tomonida qo'shilsa, `push/DeviceRegistrar.kt` tokenni shu yerdan yuboradi.
 
 ## Release APK
 
@@ -24,16 +47,16 @@ Production imzolangan APK, release guard va qabul tekshiruvi: **[docs/RELEASE.md
 
 | Kalit | Ma'nosi |
 |---|---|
-| `API_GATEWAY_URL` | API gateway manzili (HTTPS) |
-| `API_GATEWAY_PASSWORD` | Gateway paroli — har so'rovda `API_GATEWAY_HEADER` sarlavhasi bilan yuboriladi |
-| `API_GATEWAY_HEADER` | Sarlavha nomi (default `x-gateway-password`) |
-| `API_PATH_PREFIX` | REST prefiksi (default `restaurant/v1/`) |
-| `SOCKET_URL`, `SOCKET_PATH` | Socket.IO boshqa hostda bo'lsa (bo'sh = gateway bilan bir xil) |
+| `API_URL` | lakmago-server manzili (HTTPS, faqat origin), masalan `https://apilokma.poppolizol.uz` |
+| `PROD_API_HOST` | Release qabul qiladigan yagona host (default `apilokma.poppolizol.uz`) |
+| `API_PATH_PREFIX` | REST prefiksi (default `api/`) |
+| `SOCKET_URL`, `SOCKET_PATH` | Socket.IO boshqa hostda bo'lsa (bo'sh = `API_URL` bilan bir xil) |
 | `VERSION_CODE`, `VERSION_NAME` | Har Play release'da `VERSION_CODE` +1 |
 | `KEYSTORE_*`, `KEY_*` | Release imzosi |
 
-> Mobil ilovadagi har qanday qiymat APK'dan chiqarib olinishi mumkin. Gateway paroli — faqat "eshik qo'ng'irog'i";
-> haqiqiy himoya — foydalanuvchi JWT'si va backenddagi restoran avtorizatsiyasi (`restaurantId` clientdan hech qachon olinmaydi).
+> Mobil ilovadagi har qanday qiymat APK'dan chiqarib olinishi mumkin — ilovada hech qanday sir yo'q.
+> Haqiqiy himoya — restoran JWT'si va serverda tokendan olinadigan `restaurantId`.
+> Server domenini lakmago-serverning `J_ROUTE_HOSTS` ro'yxatiga qo'shmang (u yerda `/api` 404 qaytaradi).
 
 ## Buyurtma navbati (5–6 ta buyurtma birdaniga kelganda)
 
@@ -46,21 +69,21 @@ Manbalar (Socket.IO, FCM, pending sync) `orderId` bo'yicha deduplikatsiya qilina
 ## Buyurtmani yakunlashni nazorat qilish (delivery reminder)
 
 Buyurtma `Yetkazilmoqda` holatiga o'tgach, agar backend belgilangan vaqt ichida "Yetkazildi" kelmasa,
-serverdan eslatma keladi (Socket.IO `order:delivery-reminder` yoki FCM `order_delivery_reminder`) —
+serverdan eslatma keladi (Socket.IO `order:delivery-reminder`, services/restaurantReminders.js) —
 `OrderCoordinator.onDeliveryReminder()` oddiy (alarmsiz) notification ko'rsatadi, ikkita amal bilan:
 **🟢 Yetkazildi** va **🟡 Jarayonda** (`alert/ReminderActionReceiver.kt` — ilova yopiq bo'lsa ham ishlaydi).
 Xuddi shu ikki amal `OrderDetailScreen`da ham bor (order `Yetkazilmoqda` holatida bo'lganda).
 
-Ikkalasi ham backendning **mavjud** completion yo'lini chaqiradi (`POST orders/:id/reminder/ack`) —
-Android hech qachon orderni o'zicha "yakunlangan" deb belgilamaydi; server javobi kutiladi (mavjud
-`accept()` bilan bir xil naqsh). Batafsil: backend repo README, "Buyurtmani yakunlashni nazorat qilish".
+**Yetkazildi** — Telegram botdagi "✅ Yakunlandi" bilan bir xil yo'l (`POST /api/panel/orders/:id/confirm-delivered`);
+**Jarayonda** — serverda hech narsa o'zgarmaydi, keyingi eslatma jadval bo'yicha keladi (botdagi "⏳ Jarayonda" kabi).
+Android hech qachon orderni o'zicha "yakunlangan" deb belgilamaydi; server javobi kutiladi.
 
 ## Arxitektura
 
 ```
-Socket.IO (ochiq) ─┐
-FCM (fon/yopiq) ───┼─► OrderCoordinator ─► OrderQueue ─► AlertController ─► OrderAlertService (ovoz+vibratsiya)
-GET /orders/pending┘  │                                 └► Notifier (kanal: orders_new_v1, HIGH)
+Socket.IO (ochiq) ──────────┐
+GET /api/panel/orders      ├─► OrderCoordinator ─► OrderQueue ─► AlertController ─► OrderAlertService (ovoz+vibratsiya)
+  ?status=pending (sinxron) ┘  │                                 └► Notifier (kanal: orders_new_v1, HIGH)
                       └─► onDeliveryReminder ─► Notifier.notifyReminder (oddiy notification, 2 amal)
 ```
 

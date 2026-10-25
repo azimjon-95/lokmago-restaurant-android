@@ -30,9 +30,9 @@ android {
         versionName = env("VERSION_NAME", "1.0.0")
 
         // Non-environment-specific constants shared by both variants.
+        // lakmago-server: REST `/api/...` (admin panel bilan bir xil), Socket.IO `/socket.io/`.
         buildConfigField("String", "SOCKET_PATH", q(env("SOCKET_PATH", "/socket.io/")))
-        buildConfigField("String", "API_PATH_PREFIX", q(env("API_PATH_PREFIX", "restaurant/v1/")))
-        buildConfigField("String", "API_GATEWAY_HEADER", q(env("API_GATEWAY_HEADER", "x-gateway-password")))
+        buildConfigField("String", "API_PATH_PREFIX", q(env("API_PATH_PREFIX", "api/")))
     }
 
     signingConfigs {
@@ -48,25 +48,23 @@ android {
     }
 
     buildTypes {
-        // RELEASE: only the production keys (API_GATEWAY_URL, SOCKET_URL, API_GATEWAY_PASSWORD). The DEBUG_* keys are
-        // never read here, so a test server can not leak into a release APK; validateReleaseConfig
-        // (gradle/release-validation.gradle.kts) additionally rejects anything that is not https://api.lokmago.uz.
+        // RELEASE: only the production keys (API_URL, SOCKET_URL). The DEBUG_* keys are never read here, so a test
+        // server can not leak into a release APK; validateReleaseConfig (gradle/release-validation.gradle.kts)
+        // additionally rejects anything that is not https://<PROD_API_HOST> (default apilokma.poppolizol.uz).
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "API_GATEWAY_URL", q(env("API_GATEWAY_URL")))
-            buildConfigField("String", "SOCKET_URL", q(env("SOCKET_URL")))   // empty => derived from API_GATEWAY_URL
-            buildConfigField("String", "API_GATEWAY_PASSWORD", q(env("API_GATEWAY_PASSWORD")))
+            buildConfigField("String", "API_URL", q(env("API_URL")))
+            buildConfigField("String", "SOCKET_URL", q(env("SOCKET_URL")))   // empty => derived from API_URL
             signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         // DEBUG: installs side by side (applicationIdSuffix). May target a test server via DEBUG_* keys.
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "API_GATEWAY_URL", q(env("DEBUG_API_GATEWAY_URL", env("API_GATEWAY_URL", "https://restoran-api.lokma.uz/"))))
-            buildConfigField("String", "SOCKET_URL", q(env("DEBUG_SOCKET_URL", if (env("DEBUG_API_GATEWAY_URL").isNotEmpty()) "" else env("SOCKET_URL"))))
-            buildConfigField("String", "API_GATEWAY_PASSWORD", q(env("DEBUG_API_GATEWAY_PASSWORD", env("API_GATEWAY_PASSWORD"))))
+            buildConfigField("String", "API_URL", q(env("DEBUG_API_URL", env("API_URL", "https://apilokma.poppolizol.uz/"))))
+            buildConfigField("String", "SOCKET_URL", q(env("DEBUG_SOCKET_URL", if (env("DEBUG_API_URL").isNotEmpty()) "" else env("SOCKET_URL"))))
         }
     }
 
@@ -81,10 +79,11 @@ android {
 
 // ---- Release guard: see gradle/release-validation.gradle.kts ----
 extra["lokmago.releaseInputs"] = mapOf(
-    "API_GATEWAY_URL" to env("API_GATEWAY_URL"),
+    "API_URL" to env("API_URL"),
+    "PROD_API_HOST" to env("PROD_API_HOST", "apilokma.poppolizol.uz"),
     "SOCKET_URL" to env("SOCKET_URL"),
     "SOCKET_PATH" to env("SOCKET_PATH", "/socket.io/"),
-    "API_PATH_PREFIX" to env("API_PATH_PREFIX", "restaurant/v1/"),
+    "API_PATH_PREFIX" to env("API_PATH_PREFIX", "api/"),
     "VERSION_CODE" to env("VERSION_CODE"), "VERSION_CODE_RAW" to env("VERSION_CODE"),
     "VERSION_NAME" to env("VERSION_NAME"), "VERSION_NAME_RAW" to env("VERSION_NAME"),
     "KEYSTORE_PATH" to env("KEYSTORE_PATH"), "KEYSTORE_PASSWORD" to env("KEYSTORE_PASSWORD"),

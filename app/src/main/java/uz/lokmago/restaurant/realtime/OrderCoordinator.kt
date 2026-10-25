@@ -86,6 +86,7 @@ class OrderCoordinator @Inject constructor(
                     SocketEvent.Connected -> { syncPending(); devices.register() }   // reconnect ⇒ re-sync, nothing is lost
                     is SocketEvent.OrderNew -> ingest(e.order)
                     is SocketEvent.OrderUpdated -> { queue.offer(e.order).also { if (it) arrived(e.order) }; _changes.emit(e.order) }
+                    is SocketEvent.OrderTouched -> onRemoteChange(e.orderId)
                     is SocketEvent.DeliveryReminder -> onDeliveryReminder(e.orderId, e.reminderCount)
                 }
             }
@@ -216,7 +217,11 @@ class OrderCoordinator @Inject constructor(
     suspend fun advance(order: Order): ActionResult {
         val next = order.nextAction() ?: return ActionResult.Failed("Keyingi amal yo'q")
         if (next.target == OrderStatus.ACCEPTED) return accept(order.id)
-        return try { repo.setStatus(order.id, next.target).also { _changes.emit(it) }.let { ActionResult.Done(it) } }
+        return try { repo.advance(order, next.target).also { _changes.emit(it) }.let { ActionResult.Done(it) } }
+        catch (e: AppError.AlreadyHandled) {
+            runCatching { repo.order(order.id) }.getOrNull()?.let { _changes.emit(it) }   // boshqa joyda bajarilgan — yangi holatni ko'rsatamiz
+            ActionResult.AlreadyHandled
+        }
         catch (e: AppError) { ActionResult.Failed(e.message ?: "Xatolik") }
     }
 

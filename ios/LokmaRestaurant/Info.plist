@@ -8,10 +8,8 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>API_GATEWAY_HEADER</key>
-	<string>$(API_GATEWAY_HEADER)</string>
-	<key>API_GATEWAY_PASSWORD</key>
-	<string>$(API_GATEWAY_PASSWORD)</string>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
