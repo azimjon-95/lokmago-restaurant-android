@@ -14,6 +14,21 @@
 		A10000000000000000000005 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* KeychainStore.swift */; };
 		A10000000000000000000006 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* Config.swift */; };
 		A10000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* Assets.xcassets */; };
+		A20000000000000000000101 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000101 /* Theme.swift */; };
+		A20000000000000000000102 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000102 /* Components.swift */; };
+		A20000000000000000000103 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000103 /* RootView.swift */; };
+		A20000000000000000000104 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000104 /* LoginScreen.swift */; };
+		A20000000000000000000105 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000105 /* HomeScreen.swift */; };
+		A20000000000000000000106 /* OrdersScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000106 /* OrdersScreen.swift */; };
+		A20000000000000000000107 /* OrderDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000107 /* OrderDetailScreen.swift */; };
+		A20000000000000000000108 /* ReportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000108 /* ReportScreen.swift */; };
+		A20000000000000000000109 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000109 /* SettingsScreen.swift */; };
+		A20000000000000000000110 /* AlertScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000110 /* AlertScreen.swift */; };
+		A20000000000000000000111 /* Realtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000111 /* Realtime.swift */; };
+		A20000000000000000000112 /* AlertCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000112 /* AlertCenter.swift */; };
+		A20000000000000000000113 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000113 /* AppDelegate.swift */; };
+		A20000000000000000000114 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000114 /* DesignTokens.swift */; };
+		A20000000000000000000201 /* order_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000201 /* order_alert.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +42,22 @@
 		B10000000000000000000008 /* LokmaRestaurant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LokmaRestaurant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B10000000000000000000010 /* LokmaRestaurant.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LokmaRestaurant.xcconfig; sourceTree = "<group>"; };
+		B20000000000000000000101 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		B20000000000000000000102 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		B20000000000000000000103 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		B20000000000000000000104 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000105 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000106 /* OrdersScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrdersScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000107 /* OrderDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000108 /* ReportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000109 /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000110 /* AlertScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000111 /* Realtime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Realtime.swift; sourceTree = "<group>"; };
+		B20000000000000000000112 /* AlertCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertCenter.swift; sourceTree = "<group>"; };
+		B20000000000000000000113 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B20000000000000000000114 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		B20000000000000000000201 /* order_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = order_alert.wav; sourceTree = "<group>"; };
+		B20000000000000000000202 /* LokmaRestaurant.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LokmaRestaurant.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +91,22 @@
 				B10000000000000000000006 /* Config.swift */,
 				B10000000000000000000007 /* Info.plist */,
 				B10000000000000000000009 /* Assets.xcassets */,
+				B20000000000000000000101 /* Theme.swift */,
+				B20000000000000000000102 /* Components.swift */,
+				B20000000000000000000103 /* RootView.swift */,
+				B20000000000000000000104 /* LoginScreen.swift */,
+				B20000000000000000000105 /* HomeScreen.swift */,
+				B20000000000000000000106 /* OrdersScreen.swift */,
+				B20000000000000000000107 /* OrderDetailScreen.swift */,
+				B20000000000000000000108 /* ReportScreen.swift */,
+				B20000000000000000000109 /* SettingsScreen.swift */,
+				B20000000000000000000110 /* AlertScreen.swift */,
+				B20000000000000000000111 /* Realtime.swift */,
+				B20000000000000000000112 /* AlertCenter.swift */,
+				B20000000000000000000113 /* AppDelegate.swift */,
+				B20000000000000000000114 /* DesignTokens.swift */,
+				B20000000000000000000201 /* order_alert.wav */,
+				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
 			);
 			path = LokmaRestaurant;
 			sourceTree = "<group>";
@@ -130,6 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000007 /* Assets.xcassets in Resources */,
+				A20000000000000000000201 /* order_alert.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +194,20 @@
 				A10000000000000000000004 /* AppModel.swift in Sources */,
 				A10000000000000000000005 /* KeychainStore.swift in Sources */,
 				A10000000000000000000006 /* Config.swift in Sources */,
+				A20000000000000000000101 /* Theme.swift in Sources */,
+				A20000000000000000000102 /* Components.swift in Sources */,
+				A20000000000000000000103 /* RootView.swift in Sources */,
+				A20000000000000000000104 /* LoginScreen.swift in Sources */,
+				A20000000000000000000105 /* HomeScreen.swift in Sources */,
+				A20000000000000000000106 /* OrdersScreen.swift in Sources */,
+				A20000000000000000000107 /* OrderDetailScreen.swift in Sources */,
+				A20000000000000000000108 /* ReportScreen.swift in Sources */,
+				A20000000000000000000109 /* SettingsScreen.swift in Sources */,
+				A20000000000000000000110 /* AlertScreen.swift in Sources */,
+				A20000000000000000000111 /* Realtime.swift in Sources */,
+				A20000000000000000000112 /* AlertCenter.swift in Sources */,
+				A20000000000000000000113 /* AppDelegate.swift in Sources */,
+				A20000000000000000000114 /* DesignTokens.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,6 +241,7 @@
 			baseConfigurationReference = B10000000000000000000010 /* LokmaRestaurant.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LokmaRestaurant/LokmaRestaurant.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8A38QL5HR2;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -197,6 +260,7 @@
 			baseConfigurationReference = B10000000000000000000010 /* LokmaRestaurant.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LokmaRestaurant/LokmaRestaurant.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8A38QL5HR2;
 				GENERATE_INFOPLIST_FILE = NO;

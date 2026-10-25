@@ -46,6 +46,21 @@ final class APIClient {
         return try decoder.decode(T.self, from: data)
     }
 
+    /// Same as `request`, for endpoints whose reply body we do not need (it may be empty).
+    @discardableResult
+    func requestRaw(_ path: String, method: String, body: Encodable? = nil) async throws -> Data {
+        guard let endpoint = URL(string: path, relativeTo: AppConfig.apiBaseURL)?.absoluteURL else { throw APIError.http(0, "API manzili noto'g'ri") }
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = method
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let body { request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try encoder.encode(AnyEncodable(body)) }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw APIError.http((response as? HTTPURLResponse)?.statusCode ?? 0, "")
+        }
+        return data
+    }
+
     /// Admin panel bilan bir xil kirish. Faqat restoran akkaunti; restoran nomi /panel/me dan.
     func login(login: String, password: String) async throws -> (token: String, restaurant: Restaurant) {
         let r: LoginResponse = try await request("auth/login", method: "POST", body: LoginRequest(login: login, password: password))
@@ -57,7 +72,12 @@ final class APIClient {
     func refreshToken() async throws -> String { (try await request("panel/session/refresh", method: "POST") as RefreshResponse).token }
 
     func orders() async throws -> [RestaurantOrder] { try await request("panel/orders") }
-    func stats(day: String) async throws -> TodayStats { try await request("panel/stats?from=\(day)&to=\(day)") }
+    func stats(day: String) async throws -> StatsResponse { try await request("panel/stats?from=\(day)&to=\(day)") }
+    func history(day: String) async throws -> HistoryPage { try await request("panel/orders/history?from=\(day)&to=\(day)&limit=200") }
+    /// Push token for background alerts. The server endpoint is described in docs/SERVER-PUSH.md; until it exists a 404 is expected and ignored.
+    func registerDevice(token: String) async throws {
+        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"))
+    }
     func setStatus(id: String, status: String) async throws -> RestaurantOrder {
         try await request("panel/orders/\(id)/status", method: "PATCH", body: StatusRequest(status: status))
     }

@@ -10,5 +10,12 @@ enum AppConfig {
         }
         return URL(string: "https://apilokma.poppolizol.uz/api/")!
     }()
-    static let pollInterval: Duration = .seconds(15)
+    /// wss://<same host>/socket.io/?EIO=4&transport=websocket  (admin panel uses the same socket)
+    static var socketURL: URL {
+        var c = URLComponents(url: apiBaseURL, resolvingAgainstBaseURL: false)!
+        c.scheme = (c.scheme == "http") ? "ws" : "wss"
+        c.path = "/socket.io/"
+        c.queryItems = [URLQueryItem(name: "EIO", value: "4"), URLQueryItem(name: "transport", value: "websocket")]
+        return c.url!
+    }
 }

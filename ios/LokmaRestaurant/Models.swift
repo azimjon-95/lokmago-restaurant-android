@@ -93,19 +93,50 @@ struct RestaurantOrder: Decodable, Identifiable {
     }
 }
 
-/// GET /api/panel/stats?from=&to= (controllers/restaurantApp.js)
-struct TodayStats: Decodable {
-    let ordersCount: Int; let waiting: Int; let revenue: Int64
-    private struct Created: Decodable { let count: Int?; let byStatus: [String: Int]? }
-    private struct Delivered: Decodable { let total: Double? }
-    enum CodingKeys: String, CodingKey { case created, delivered }
+/// GET /api/panel/stats?from=&to= (controllers/restaurantApp.js). Every field optional: a missing one must never break the screen.
+struct StatsResponse: Decodable {
+    struct Created: Decodable { let count: Int?; let byStatus: [String: Int]? }
+    struct MoneyCount: Decodable { let count: Int?; let total: Double? }
+    struct ByPayment: Decodable { let cash: MoneyCount?; let card: MoneyCount? }
+    struct Delivered: Decodable { let count: Int?; let total: Double?; let byPayment: ByPayment? }
+    let created: Created?; let delivered: Delivered?
+}
+
+/// What the Home and Report screens show (mirrors Android's DayStats).
+struct TodayStats {
+    var ordersCount = 0, ordersDelta = 0, waiting = 0
+    var revenue: Int64 = 0, revenueDeltaPct = 0
+    var cashCount = 0, cardCount = 0
+    var cashRevenue: Int64 = 0, cardRevenue: Int64 = 0
+    var hourly: [Int64] = Array(repeating: 0, count: 24)
+
+    init() {}
+    init(today t: StatsResponse, yesterday y: StatsResponse?, history: [RestaurantOrder]) {
+        ordersCount = t.created?.count ?? 0
+        ordersDelta = y.map { ordersCount - ($0.created?.count ?? 0) } ?? 0
+        waiting = t.created?.byStatus?["pending"] ?? 0
+        revenue = Int64((t.delivered?.total ?? 0).rounded())
+        let prev = Int64((y?.delivered?.total ?? 0).rounded())
+        revenueDeltaPct = prev > 0 ? Int((Double(revenue - prev) * 100 / Double(prev)).rounded()) : 0
+        cashCount = t.delivered?.byPayment?.cash?.count ?? 0
+        cardCount = t.delivered?.byPayment?.card?.count ?? 0
+        cashRevenue = Int64((t.delivered?.byPayment?.cash?.total ?? 0).rounded())
+        cardRevenue = Int64((t.delivered?.byPayment?.card?.total ?? 0).rounded())
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Tashkent") ?? .current
+        for o in history where o.status.lowercased() == "delivered" {
+            let h = cal.component(.hour, from: Date(timeIntervalSince1970: Double(o.createdAt) / 1000))
+            hourly[h] += o.total
+        }
+    }
+}
+/// GET /api/panel/orders/history
+struct HistoryPage: Decodable {
+    let items: [RestaurantOrder]
+    enum CodingKeys: String, CodingKey { case items }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        let created = try? c.decode(Created.self, forKey: .created)
-        let delivered = try? c.decode(Delivered.self, forKey: .delivered)
-        ordersCount = created?.count ?? 0
-        waiting = created?.byStatus?["pending"] ?? 0
-        revenue = Int64((delivered?.total ?? 0).rounded())
+        items = (try? c.decode([RestaurantOrder].self, forKey: .items)) ?? []
     }
 }
 struct StatusRequest: Encodable { let status: String }
+struct DeviceRequest: Encodable { let token: String; let platform: String }
