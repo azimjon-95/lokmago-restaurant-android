@@ -16,12 +16,20 @@ The app processes restaurant staff login credentials for authentication, a sessi
 
 Before submission, publish a restaurant-app privacy policy that names the legal operator and provides a working privacy contact. The existing customer-app policy does not describe this staff app's order/customer data access and should not be reused without revision.
 
+## Store materials
+
+- Listing metadata draft: `ios/AppStore/STORE_LISTING.md`.
+- Privacy policy draft with backend-verification checklist: `ios/AppStore/PRIVACY_POLICY_DRAFT.md`.
+- Support page draft: `ios/AppStore/SUPPORT_PAGE_DRAFT.md`.
+- Replace every bracketed placeholder and publish the policy/support pages at public HTTPS URLs before submission.
+
 ## Remaining release requirements
 
 - TLS for `restoran-api.lokma.uz` is configured with an auto-renewing Let's Encrypt certificate; `/health` and `/restaurant/v1/app/version` were verified over HTTPS.
 - Configure APNs and backend push delivery if background order alerts are required. This first iOS version polls for new orders while the app is open.
 - Apple Development signing is configured for device testing.
 - Create an Apple Distribution signing identity/profile before exporting an App Store archive.
+- Current Release archive is at `ios/build/LokmaRestaurant.xcarchive`; it was built without signing and cannot be uploaded until Distribution signing is configured.
 - Before local Xcode builds, run `./ios/sync-config.sh` to load the gateway header/password from the ignored `env.properties` file.
 - Create the App Store Connect app record, verify account ownership and legal details, and answer the App Privacy questionnaire based on the backend's actual practices.
 - Capture required iPhone screenshots on a real device and provide public support/privacy URLs.
