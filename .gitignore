@@ -23,3 +23,7 @@ signing/
 *.apk
 *.aab
 *.apks
+ios/build/
+ios/LokmaRestaurant.xcodeproj/xcuserdata/
+*.xcuserstate
+ios/Secrets.xcconfig
