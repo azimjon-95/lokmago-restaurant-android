@@ -44,6 +44,10 @@ class Notifier @Inject constructor(
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setBypassDnd(false)
         })
+        nm.createNotificationChannel(NotificationChannel(CH_LISTEN, "Buyurtmalarni kuzatish", NotificationManager.IMPORTANCE_LOW).apply {
+            description = "Ilova yopiq yoki telefon bloklangan bo'lsa ham yangi buyurtmani darhol bildirish uchun doimiy ulanish"
+            setSound(null, null); enableVibration(false); setShowBadge(false)
+        })
         nm.createNotificationChannel(NotificationChannel(CH_ALERT, ctx.getString(R.string.channel_alert_name), NotificationManager.IMPORTANCE_LOW).apply {
             description = ctx.getString(R.string.channel_alert_desc)
             setSound(null, null); enableVibration(false)
@@ -134,11 +138,23 @@ class Notifier @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
+    /** Persistent "listening" notification: keeps the Socket.IO connection (and the process) alive while the phone is locked. */
+    fun listenerNotification(): Notification = NotificationCompat.Builder(ctx, CH_LISTEN)
+        .setSmallIcon(R.drawable.ic_bell)
+        .setContentTitle("LokmaGo Restoran")
+        .setContentText("Yangi buyurtmalar kuzatilmoqda")
+        .setOngoing(true).setSilent(true).setShowWhen(false)
+        .setCategory(NotificationCompat.CATEGORY_SERVICE)
+        .setContentIntent(openOrder(null))
+        .build()
+
     private fun idFor(orderId: String) = orderId.hashCode().let { if (it == SERVICE_ID) it + 1 else it }
 
     companion object {
         const val CH_ORDERS = "orders_new_v2" // a channel's sound is frozen once created: bump this when the sound itself changes
         const val CH_ALERT = "alert_service_v1"
+        const val CH_LISTEN = "listener_v1"
         const val SERVICE_ID = 4242
+        const val LISTENER_ID = 4243
     }
 }

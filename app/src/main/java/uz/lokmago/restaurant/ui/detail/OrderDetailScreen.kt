@@ -34,6 +34,7 @@ import uz.lokmago.restaurant.domain.OrderStatus
 import uz.lokmago.restaurant.realtime.ActionResult
 import uz.lokmago.restaurant.realtime.OrderCoordinator
 import uz.lokmago.restaurant.ui.components.*
+import uz.lokmago.restaurant.ui.theme.Dt
 import uz.lokmago.restaurant.ui.theme.Lg
 import uz.lokmago.restaurant.util.hhmmDate
 import uz.lokmago.restaurant.util.som
@@ -112,7 +113,7 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
 
                     SectionCard {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            LgIcon(R.drawable.ic_user, Lg.Muted); Column { Text("Mijoz", color = Lg.Muted, fontSize = 12.sp); Text(o.customerName ?: "—", color = Lg.Text, fontWeight = FontWeight.SemiBold) }
+                            LgIcon(R.drawable.ic_user, Lg.Muted); Column { Text("Mijoz", color = Lg.TextSecondary, fontSize = 12.sp); Text(o.customerName ?: "—", color = Lg.Text, fontWeight = FontWeight.SemiBold) }
                         }
                         o.customerPhone?.let { p ->
                             Spacer(Modifier.height(10.dp))
@@ -127,13 +128,13 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                         }
                     }
 
-                    Text("Buyurtma tarkibi", color = Lg.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text("Buyurtma tarkibi", color = Lg.Text, fontSize = Dt.fontSection, fontWeight = FontWeight.Bold)
                     SectionCard {
                         o.items.forEachIndexed { i, it ->
                             if (i > 0) HorizontalDivider(color = Lg.Line, modifier = Modifier.padding(vertical = 10.dp))
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 AsyncImage(it.imageUrl, null, Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Lg.Surface))
-                                Column(Modifier.weight(1f)) { Text(it.name, color = Lg.Text, fontWeight = FontWeight.SemiBold); Text("× ${it.quantity}", color = Lg.Muted, fontSize = 12.sp) }
+                                Column(Modifier.weight(1f)) { Text(it.name, color = Lg.Text, fontWeight = FontWeight.SemiBold); Text("× ${it.quantity}", color = Lg.TextSecondary, fontSize = 12.sp) }
                                 Text(it.lineTotal.som(), color = Lg.Text, fontSize = 14.sp)
                             }
                         }
@@ -143,7 +144,7 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                     }
 
                     if (!o.address.isNullOrBlank()) SectionCard {
-                        Text("Mijoz manzili", color = Lg.Muted, fontSize = 12.sp)
+                        Text("Mijoz manzili", color = Lg.TextSecondary, fontSize = 12.sp)
                         Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) { LgIcon(R.drawable.ic_pin, Lg.Green); Text(o.address, color = Lg.Text) }
                         OutlinedButtonLike("Xaritada ko'rish") {
                             val q = if (o.lat != null && o.lng != null) "geo:${o.lat},${o.lng}?q=${o.lat},${o.lng}" else "geo:0,0?q=${Uri.encode(o.address)}"
@@ -159,7 +160,7 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                             // "hali yetkazilmoqda" so the next automatic reminder is postponed (TZ §9/§21).
                             OutlinedActionButton("🟡 Jarayonda", enabled = !ui.busy) { vm.stillInProgress() }
                         }
-                        PrimaryButton(a.label, icon = R.drawable.ic_check, loading = ui.busy,
+                        PrimaryButton(a.label, icon = if (o.status == OrderStatus.ACCEPTED) R.drawable.ic_chef_hat else R.drawable.ic_check_circle, loading = ui.busy,
                             color = if (o.status == OrderStatus.ACCEPTED) Lg.Orange else Lg.Green) { vm.act() }
                     }
                 }
@@ -170,7 +171,7 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
 
 @Composable private fun KV(icon: Int, k: String, v: String) =
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        LgIcon(icon, Lg.Muted); Column { Text(k, color = Lg.Muted, fontSize = 12.sp); Text(v, color = Lg.Text, fontWeight = FontWeight.SemiBold) }
+        LgIcon(icon, Lg.Muted); Column { Text(k, color = Lg.TextSecondary, fontSize = 12.sp); Text(v, color = Lg.Text, fontWeight = FontWeight.SemiBold) }
     }
 
 @Composable private fun Sum(k: String, v: String, big: Boolean = false) =

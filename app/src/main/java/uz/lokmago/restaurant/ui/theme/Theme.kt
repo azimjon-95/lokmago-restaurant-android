@@ -9,23 +9,28 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/** Legacy names kept so every screen keeps compiling; the VALUES come from the shared design tokens (Dt). */
 object Lg {
-    val Bg = Color(0xFF0B1220)
-    val Surface = Color(0xFF111A2B)
-    val Card = Color(0xFF15203A)
-    val Line = Color(0xFF223050)
-    val Text = Color(0xFFF2F5FA)
-    val Muted = Color(0xFF8A97AD)
-    val Green = Color(0xFF12C98A)
-    val GreenDark = Color(0xFF0B8F63)
-    val Orange = Color(0xFFFF8A00)
-    val Red = Color(0xFFFF3B4E)
-    val Blue = Color(0xFF3B82F6)
-    val Purple = Color(0xFF8B5CF6)
+    val Bg = Dt.bg
+    val Surface = Dt.header
+    val Card = Dt.card
+    val CardStat = Dt.cardStat
+    val CardHigh = Dt.cardHigh
+    val Line = Dt.line
+    val Text = Dt.text
+    val TextSecondary = Dt.textSecondary
+    val Muted = Dt.textMuted
+    val Green = Dt.green
+    val GreenText = Dt.greenText
+    val GreenDark = Dt.greenDeep
+    val Orange = Dt.orange
+    val Red = Dt.red
+    val Blue = Dt.blue
+    val Purple = Dt.purple
 }
 
 private val scheme = darkColorScheme(
-    primary = Lg.Green, onPrimary = Color(0xFF03130D),
+    primary = Lg.Green, onPrimary = Dt.onAccent,
     background = Lg.Bg, onBackground = Lg.Text,
     surface = Lg.Surface, onSurface = Lg.Text,
     surfaceVariant = Lg.Card, onSurfaceVariant = Lg.Muted,

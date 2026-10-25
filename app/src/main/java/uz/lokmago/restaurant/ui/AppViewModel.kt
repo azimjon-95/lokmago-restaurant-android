@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.alert.AlertController
 import uz.lokmago.restaurant.data.local.SessionStore
+import uz.lokmago.restaurant.data.local.SettingsStore
 import uz.lokmago.restaurant.data.repo.AuthRepository
 import uz.lokmago.restaurant.data.remote.dto.VersionDto
 import uz.lokmago.restaurant.realtime.*
@@ -21,6 +23,7 @@ class AppViewModel @Inject constructor(
     socket: SocketManager,
     private val alert: AlertController,
     private val auth: AuthRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
 
     val session = sessionStore.session
@@ -37,6 +40,12 @@ class AppViewModel @Inject constructor(
     val messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     init {
+        // "Avto yangilash": while the app is open, re-sync the pending orders every N seconds as a safety net behind the socket.
+        viewModelScope.launch {
+            settings.state.map { it.autoRefreshSec }.distinctUntilChanged().collectLatest { sec ->
+                if (sec > 0) while (true) { delay(sec * 1_000L); if (session.value != null) coordinator.syncPending() }
+            }
+        }
         viewModelScope.launch { coordinator.arrivals.collect { hidden.value = false } }   // new order ⇒ alert comes back
         viewModelScope.launch { session.collect { if (it != null) coordinator.start() } }
     }

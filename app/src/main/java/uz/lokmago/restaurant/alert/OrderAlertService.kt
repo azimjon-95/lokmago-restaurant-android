@@ -5,9 +5,11 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.IBinder
 import android.os.VibrationEffect
+import android.os.PowerManager
 import android.os.Vibrator
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,6 +40,7 @@ class OrderAlertService : Service() {
     private var job: Job? = null
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var savedAlarmVolume: Int? = null
     private val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
 
@@ -54,14 +57,14 @@ class OrderAlertService : Service() {
         if (job == null) {
             job = scope.launch {
                 combine(queue.state, alert.silenced, alert.unresolved, settings.state) { s, silenced, unresolved, cfg ->
-                    Snapshot(s, silenced, unresolved.isNotEmpty(), cfg.sound, cfg.vibration)
+                    Snapshot(s, silenced, unresolved.isNotEmpty(), cfg.sound, cfg.vibration, cfg.volume)
                 }.collect { render(it) }
             }
         }
         return START_NOT_STICKY
     }
 
-    private data class Snapshot(val q: OrderQueue.State, val silenced: Boolean, val loading: Boolean, val sound: Boolean, val vibe: Boolean)
+    private data class Snapshot(val q: OrderQueue.State, val silenced: Boolean, val loading: Boolean, val sound: Boolean, val vibe: Boolean, val volume: Int)
 
     private fun render(s: Snapshot) {
         if (s.q.isEmpty && !s.loading) {          // nothing left to decide → stop ringing, go away
@@ -72,7 +75,7 @@ class OrderAlertService : Service() {
         }
         getSystemService(NotificationManager::class.java).notify(
             Notifier.SERVICE_ID, notifier.serviceNotification(s.q.head, s.q.waiting.size, s.silenced))
-        if (!s.silenced && s.sound) startSound() else stopSound()
+        if (!s.silenced && s.sound) { applyVolume(s.volume); startSound() } else stopSound()
         if (!s.silenced && s.vibe) startVibration() else stopVibration()
     }
 
@@ -82,6 +85,7 @@ class OrderAlertService : Service() {
         player = runCatching {
             MediaPlayer().apply {
                 setAudioAttributes(attrs)
+                setWakeMode(this@OrderAlertService, PowerManager.PARTIAL_WAKE_LOCK)   // CPU stays awake while ringing with the screen off
                 resources.openRawResourceFd(R.raw.order_alert).use { setDataSource(it.fileDescriptor, it.startOffset, it.length) }
                 isLooping = true
                 prepare(); start()
@@ -89,7 +93,24 @@ class OrderAlertService : Service() {
         }.getOrNull()
     }
 
-    private fun stopSound() { player?.runCatching { stop(); release() }; player = null }
+    private fun stopSound() {
+        player?.runCatching { stop(); release() }; player = null
+        savedAlarmVolume?.let { v -> runCatching { getSystemService(AudioManager::class.java).setStreamVolume(AudioManager.STREAM_ALARM, v, 0) } }
+        savedAlarmVolume = null
+    }
+
+    /**
+     * The alarm stream is raised to the level chosen in Sozlamalar (Past / O'rta / Baland) and restored afterwards.
+     * It is the alarm stream, so a silent / vibrate-only ringer does not mute it.
+     */
+    private fun applyVolume(level: Int) {
+        runCatching {
+            val am = getSystemService(AudioManager::class.java)
+            if (savedAlarmVolume == null) savedAlarmVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            val frac = when (level) { 0 -> 0.4f; 1 -> 0.7f; else -> 1.0f }
+            am.setStreamVolume(AudioManager.STREAM_ALARM, (am.getStreamMaxVolume(AudioManager.STREAM_ALARM) * frac).toInt().coerceAtLeast(1), 0)
+        } // SecurityException under some Do-Not-Disturb policies: ring at the current volume instead
+    }
 
     @Suppress("DEPRECATION")
     private fun startVibration() {

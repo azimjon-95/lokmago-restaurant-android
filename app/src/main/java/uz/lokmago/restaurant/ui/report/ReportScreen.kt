@@ -48,20 +48,20 @@ fun ReportScreen(vm: ReportViewModel = hiltViewModel()) {
     val s by vm.stats.collectAsStateWithLifecycle()
     val err by vm.error.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Hisobot", color = Lg.Text, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { LgIcon(R.drawable.ic_calendar, Lg.Muted, 18.dp); Spacer(Modifier.width(8.dp)); Text("Bugun", color = Lg.Text) }
+        Text("Hisobot", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
+        SectionCard(bg = Lg.CardStat) { Row(verticalAlignment = Alignment.CenterVertically) { Text(todayLabel(), color = Lg.Text, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); LgIcon(R.drawable.ic_calendar, Lg.TextSecondary, 20.dp) } }
         val d = s
         if (d == null) { Text(err ?: "Yuklanmoqda…", color = Lg.Muted); return@Column }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionCard(Modifier.weight(1f)) { Text("Buyurtmalar soni", color = Lg.Muted, fontSize = 12.sp); Text("${d.ordersCount}", color = Lg.Text, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold) }
-            SectionCard(Modifier.weight(1f)) { Text("Jami savdo", color = Lg.Muted, fontSize = 12.sp); Text(d.revenue.som(), color = Lg.Text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold) }
+            SectionCard(Modifier.weight(1f), bg = Lg.CardStat) { Text("Buyurtmalar soni", color = Lg.TextSecondary, fontSize = 12.sp); Text("${d.ordersCount}", color = Lg.Text, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold); if (d.ordersDelta != 0) Text("${if (d.ordersDelta > 0) "↑" else "↓"} ${kotlin.math.abs(d.ordersDelta)}", color = Lg.GreenText, fontSize = 13.sp) }
+            SectionCard(Modifier.weight(1f), bg = Lg.CardStat) { Text("Jami savdo", color = Lg.TextSecondary, fontSize = 12.sp); Text(d.revenue.som(), color = Lg.Text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold); if (d.revenueDeltaPct != 0) Text("${if (d.revenueDeltaPct > 0) "↑" else "↓"} ${kotlin.math.abs(d.revenueDeltaPct)}%", color = Lg.GreenText, fontSize = 13.sp) }
         }
         val total = (d.cashRevenue + d.cardRevenue).coerceAtLeast(1)
         val cashPct = (d.cashRevenue * 100 / total).toInt()
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionCard(Modifier.weight(1f)) { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { LgIcon(R.drawable.ic_cash, Lg.Green, 16.dp); Text("Naqd usuli", color = Lg.Green, fontSize = 12.sp) }; Text(d.cashRevenue.som(), color = Lg.Text, fontWeight = FontWeight.Bold); Text("$cashPct%", color = Lg.Muted, fontSize = 12.sp) }
-            SectionCard(Modifier.weight(1f)) { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { LgIcon(R.drawable.ic_card, Lg.Blue, 16.dp); Text("Karta orqali", color = Lg.Blue, fontSize = 12.sp) }; Text(d.cardRevenue.som(), color = Lg.Text, fontWeight = FontWeight.Bold); Text("${100 - cashPct}%", color = Lg.Muted, fontSize = 12.sp) }
+            SectionCard(Modifier.weight(1f), bg = Lg.CardStat) { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { LgIcon(R.drawable.ic_cash, Lg.Green, 16.dp); Text("Naqd usuli", color = Lg.Green, fontSize = 12.sp) }; Text(d.cashRevenue.som(), color = Lg.Text, fontWeight = FontWeight.Bold); Text("$cashPct%", color = Lg.Muted, fontSize = 12.sp) }
+            SectionCard(Modifier.weight(1f), bg = Lg.CardStat) { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { LgIcon(R.drawable.ic_card, Lg.Blue, 16.dp); Text("Karta usuli", color = Lg.Blue, fontSize = 12.sp) }; Text(d.cardRevenue.som(), color = Lg.Text, fontWeight = FontWeight.Bold); Text("${100 - cashPct}%", color = Lg.Muted, fontSize = 12.sp) }
         }
 
         Text("Savdo grafigi", color = Lg.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
@@ -112,4 +112,11 @@ private fun HourlyChart(hourly: List<Long>) {
             listOf(9, 11, 13, 15, 17, 19, 21).forEach { Text("%02d:00".format(it), color = Lg.Muted, fontSize = 10.sp) }
         }
     }
+}
+
+/** "Bugun, 24 sentabr" — Uzbek month names, as in the mockup. */
+private fun todayLabel(): String {
+    val months = listOf("yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr")
+    val c = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tashkent"))
+    return "Bugun, ${c.get(java.util.Calendar.DAY_OF_MONTH)} ${months[c.get(java.util.Calendar.MONTH)]}"
 }

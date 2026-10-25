@@ -118,7 +118,7 @@ private fun MainTabs(
         Box(Modifier.weight(1f)) {
             when (tab) {
                 Tab.HOME -> HomeScreen(queue, online, notificationsOn, onOpenOrder, { tab = Tab.ORDERS }, onFixNotifications, { tab = Tab.ORDERS })
-                Tab.ORDERS -> OrdersScreen(onOpenOrder)
+                Tab.ORDERS -> OrdersScreen(onOpenOrder, queue.size, { })
                 Tab.REPORT -> ReportScreen()
                 Tab.PROFILE -> SettingsScreen(onLogout)
             }
@@ -132,8 +132,8 @@ private fun MainTabs(
                             LgIcon(t.icon, if (tab == t) Lg.Green else Lg.Muted)
                         }
                     },
-                    label = { Text(t.label, fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(selectedTextColor = Lg.Green, unselectedTextColor = Lg.Muted, indicatorColor = Lg.Green.copy(alpha = 0.12f)),
+                    label = { Text(t.label, fontSize = 11.sp, fontWeight = if (tab == t) FontWeight.Bold else FontWeight.Medium) },
+                    colors = NavigationBarItemDefaults.colors(selectedIconColor = Lg.Green, selectedTextColor = Lg.Green, unselectedIconColor = Lg.Muted, unselectedTextColor = Lg.Muted, indicatorColor = androidx.compose.ui.graphics.Color.Transparent),
                 )
             }
         }
