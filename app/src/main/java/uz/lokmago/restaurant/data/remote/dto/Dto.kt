@@ -170,6 +170,8 @@ fun OrderDto.toReview(): Review? {
 @Serializable data class StopRequest(val stop: Boolean)
 @Serializable data class OkDto(val ok: Boolean = true)
 @Serializable data class CountDto(val count: Int = 0)
+@Serializable data class DeviceRegisterRequest(val token: String, val platform: String = "android")
+@Serializable data class DeviceUnregisterRequest(val token: String)
 
 /** GET /api/upload/signature — Cloudinary'ga TO'G'RIDAN yuklash uchun imzo (secret telefonga tushmaydi). */
 @Serializable data class UploadSignatureDto(

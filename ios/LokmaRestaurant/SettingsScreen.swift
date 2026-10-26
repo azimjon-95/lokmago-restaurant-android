@@ -59,7 +59,7 @@ struct SettingsScreen: View {
                 group("Hisob") {
                     row("ic_user", "Login", UserDefaults.standard.string(forKey: "last-login") ?? "") {}
                     row("ic_store", "Restoran nomi", model.restaurant?.name ?? "") {}
-                    Button { model.signOut() } label: {
+                    Button { Task { await model.logout() } } label: {
                         HStack(spacing: 12) {
                             LgIcon(name: "ic_logout", color: Dt.red)
                             Text("Chiqish").font(.system(size: 15, weight: .semibold)).foregroundStyle(Dt.red)

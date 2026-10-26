@@ -38,4 +38,8 @@ interface LokmaApi {
     /** Badge uchun arzon so'rov: faqat son. */
     @GET("panel/dishes/stopped/count") suspend fun stoppedCount(): CountDto
     @GET("upload/signature") suspend fun uploadSignature(@Query("folder") folder: String): UploadSignatureDto
+
+    // ---- Push qurilmasi (lakmago-server: /api/panel/devices) — yangi buyurtma ilova yopiq bo'lsa ham keladi ----
+    @POST("panel/devices") suspend fun registerDevice(@Body body: DeviceRegisterRequest)
+    @HTTP(method = "DELETE", path = "panel/devices", hasBody = true) suspend fun unregisterDevice(@Body body: DeviceUnregisterRequest)
 }

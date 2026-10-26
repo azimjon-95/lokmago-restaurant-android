@@ -105,6 +105,12 @@ enum Prefs {
         } catch { self.error = error.localizedDescription }
     }
 
+    /// "Chiqish" tugmasi: avval push tokenini serverdan o'chiradi (JWT hali bor), keyin sessiyani yopadi.
+    func logout() async {
+        if isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") { try? await api.unregisterDevice(token: hex) }
+        signOut()
+    }
+
     func signOut() {
         pollingTask?.cancel(); socket.disconnect(); AlertCenter.shared.stopRinging(); AlertCenter.shared.cancelBackgroundAlerts()
         menu.reset()

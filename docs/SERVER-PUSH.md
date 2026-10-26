@@ -1,3 +1,5 @@
+> **Holat:** serverda amalga oshirildi — `lakmago-server` `main` `fb3b300` (`src/services/mobilePush.js`, `docs/MOBIL-PUSH.md`). Quyidagi shartnoma o'sha kod bilan bir xil. Audit: [PUSH-AUDIT.md](PUSH-AUDIT.md).
+
 # Server push shartnomasi (lakmago-server uchun)
 
 Hozir lakmago-serverda push yo'q: yopiq iOS ilova va «uxlab qolgan» Android ilova yangi buyurtmani bilmaydi.

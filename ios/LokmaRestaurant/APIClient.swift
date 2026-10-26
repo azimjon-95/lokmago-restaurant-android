@@ -104,6 +104,8 @@ final class APIClient {
 
     func history(day: String) async throws -> HistoryPage { try await request("panel/orders/history?from=\(day)&to=\(day)&limit=200") }
     /// Push token for background alerts. The server endpoint is described in docs/SERVER-PUSH.md; until it exists a 404 is expected and ignored.
+    /// Chiqishda: bu iPhone endi shu restoranning buyurtmalarini olmaydi.
+    func unregisterDevice(token: String) async throws { _ = try await requestRaw("panel/devices", method: "DELETE", json: ["token": token]) }
     func registerDevice(token: String) async throws {
         _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"))
     }
