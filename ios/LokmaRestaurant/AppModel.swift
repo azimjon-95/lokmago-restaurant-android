@@ -14,7 +14,8 @@ enum Prefs {
 @MainActor final class AppModel: ObservableObject {
     static weak var shared: AppModel?
 
-    let api = APIClient()
+    let api: APIClient
+    let menu: MenuStore
     private let socket = RealtimeSocket()
     @Published var token: String? { didSet { api.token = token; KeychainStore.save(token) } }
     @Published var restaurant: Restaurant? {
@@ -39,13 +40,19 @@ enum Prefs {
     private let refreshedKey = "token-refreshed-at"
 
     init() {
+        let client = APIClient()
+        api = client
+        menu = MenuStore(api: client)
         token = KeychainStore.read()
         api.token = token
         restaurant = UserDefaults.standard.data(forKey: "restaurant-profile").flatMap { try? JSONDecoder().decode(Restaurant.self, from: $0) }
         AppModel.shared = self
-        socket.onConnected = { [weak self] in Task { @MainActor in self?.online = true; await self?.refresh() } }
+        socket.onConnected = { [weak self] in Task { @MainActor in self?.online = true; await self?.refresh(); await self?.menu.refresh() } }
         socket.onDisconnected = { [weak self] in Task { @MainActor in self?.online = false } }
-        socket.onEvent = { [weak self] name in Task { @MainActor in if name.hasPrefix("order:") { await self?.refresh() } } }
+        socket.onEvent = { [weak self] name in Task { @MainActor in
+            if name.hasPrefix("order:") { await self?.refresh() }
+            if name.hasPrefix("dish:") { self?.menu.scheduleRefresh() }           // menyu / STOP o'zgardi (admin panel bilan bir xil hodisalar)
+        } }
     }
 
     var isSignedIn: Bool { token != nil }
@@ -58,6 +65,7 @@ enum Prefs {
         guard isSignedIn else { return }
         startRealtime()
         await refresh()
+        await menu.refresh()
     }
 
     private func startRealtime() {
@@ -96,6 +104,7 @@ enum Prefs {
 
     func signOut() {
         pollingTask?.cancel(); socket.disconnect(); AlertCenter.shared.stopRinging(); AlertCenter.shared.cancelBackgroundAlerts()
+        menu.reset()
         token = nil; restaurant = nil; orders = []; stats = nil; online = false; knownPending = []; silenced = false; minimized = false
     }
 
@@ -145,6 +154,20 @@ enum Prefs {
             else { _ = try await api.setStatus(id: order.id, status: status) }
             await refresh()
         } catch { handle(error); await refresh() }
+    }
+
+    /// Mijoz izohlari: oxirgi [days] kun tarixi sahifalab o'qiladi, faqat bahosi yoki izohi borlari qoladi.
+    func loadReviews(days: Int = 120, maxPages: Int = 12) async throws -> [Review] {
+        let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.timeZone = TimeZone(identifier: "Asia/Tashkent"); f.dateFormat = "yyyy-MM-dd"
+        let to = f.string(from: Date()), from = f.string(from: Date().addingTimeInterval(-Double(days) * 86_400))
+        var out: [Review] = [], cursor: String? = nil, pages = 0
+        repeat {
+            let page = try await api.historyPage(from: from, to: to, cursor: cursor)
+            out += page.items.compactMap(\.review)
+            cursor = page.nextCursor; pages += 1
+            if !page.hasMore { break }
+        } while cursor != nil && pages < maxPages
+        return out.sorted { $0.at > $1.at }
     }
 
     // ---- alarm ---------------------------------------------------------------------------------------

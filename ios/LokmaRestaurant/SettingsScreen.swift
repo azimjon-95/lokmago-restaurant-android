@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct SettingsScreen: View {
+    var openReport: () -> Void = {}
+    var openReviews: () -> Void = {}
     @EnvironmentObject private var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("sound") private var sound = true
@@ -17,6 +19,11 @@ struct SettingsScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Dt.spaceGap) {
                 Text("Sozlamalar").font(.system(size: 26, weight: .heavy)).padding(.top, 8)
+
+                group("Biznes") {
+                    row("ic_report", "Hisobot", "Savdo va grafiklar", action: openReport)
+                    row("ic_message", "Mijozlar izohlari", "Baho va fikrlar", action: openReviews)
+                }
 
                 group("Buyurtmalar") {
                     toggle("ic_volume", "Buyurtma ovozi", $sound)

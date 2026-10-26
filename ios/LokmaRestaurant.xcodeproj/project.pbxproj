@@ -29,6 +29,14 @@
 		A20000000000000000000113 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000113 /* AppDelegate.swift */; };
 		A20000000000000000000114 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000114 /* DesignTokens.swift */; };
 		A20000000000000000000201 /* order_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000201 /* order_alert.wav */; };
+		A20000000000000000000301 /* CloudinaryUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000301 /* CloudinaryUploader.swift */; };
+		A20000000000000000000302 /* MenuStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000302 /* MenuStore.swift */; };
+		A20000000000000000000303 /* ImageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000303 /* ImageViews.swift */; };
+		A20000000000000000000304 /* DishDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000304 /* DishDraft.swift */; };
+		A20000000000000000000305 /* MenuScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000305 /* MenuScreen.swift */; };
+		A20000000000000000000306 /* DishFormScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000306 /* DishFormScreen.swift */; };
+		A20000000000000000000307 /* StopListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000307 /* StopListScreen.swift */; };
+		A20000000000000000000308 /* ReviewsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000308 /* ReviewsScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +66,14 @@
 		B20000000000000000000114 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		B20000000000000000000201 /* order_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = order_alert.wav; sourceTree = "<group>"; };
 		B20000000000000000000202 /* LokmaRestaurant.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LokmaRestaurant.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000301 /* CloudinaryUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudinaryUploader.swift; sourceTree = "<group>"; };
+		B20000000000000000000302 /* MenuStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuStore.swift; sourceTree = "<group>"; };
+		B20000000000000000000303 /* ImageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViews.swift; sourceTree = "<group>"; };
+		B20000000000000000000304 /* DishDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishDraft.swift; sourceTree = "<group>"; };
+		B20000000000000000000305 /* MenuScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000306 /* DishFormScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishFormScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000307 /* StopListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopListScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000308 /* ReviewsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +123,14 @@
 				B20000000000000000000114 /* DesignTokens.swift */,
 				B20000000000000000000201 /* order_alert.wav */,
 				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
+				B20000000000000000000301 /* CloudinaryUploader.swift */,
+				B20000000000000000000302 /* MenuStore.swift */,
+				B20000000000000000000303 /* ImageViews.swift */,
+				B20000000000000000000304 /* DishDraft.swift */,
+				B20000000000000000000305 /* MenuScreen.swift */,
+				B20000000000000000000306 /* DishFormScreen.swift */,
+				B20000000000000000000307 /* StopListScreen.swift */,
+				B20000000000000000000308 /* ReviewsScreen.swift */,
 			);
 			path = LokmaRestaurant;
 			sourceTree = "<group>";
@@ -208,6 +232,14 @@
 				A20000000000000000000112 /* AlertCenter.swift in Sources */,
 				A20000000000000000000113 /* AppDelegate.swift in Sources */,
 				A20000000000000000000114 /* DesignTokens.swift in Sources */,
+				A20000000000000000000301 /* CloudinaryUploader.swift in Sources */,
+				A20000000000000000000302 /* MenuStore.swift in Sources */,
+				A20000000000000000000303 /* ImageViews.swift in Sources */,
+				A20000000000000000000304 /* DishDraft.swift in Sources */,
+				A20000000000000000000305 /* MenuScreen.swift in Sources */,
+				A20000000000000000000306 /* DishFormScreen.swift in Sources */,
+				A20000000000000000000307 /* StopListScreen.swift in Sources */,
+				A20000000000000000000308 /* ReviewsScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

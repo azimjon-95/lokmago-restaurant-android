@@ -1,10 +1,14 @@
 import SwiftUI
 
+/// Pages pushed on top of the tabs.
+enum Route: Hashable { case order(String), report, reviews }
+
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var menu: MenuStore
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab = 0
-    @State private var path: [String] = []
+    @State private var path: [Route] = []
 
     var body: some View {
         ZStack {
@@ -13,21 +17,28 @@ struct RootView: View {
                     VStack(spacing: 0) {
                         Group {
                             switch tab {
-                            case 0: HomeScreen(openOrder: { path.append($0) }, showOrders: { tab = 1 })
-                            case 1: OrdersScreen(openOrder: { path.append($0) })
-                            case 2: ReportScreen()
-                            default: SettingsScreen()
+                            case 0: HomeScreen(openOrder: { path.append(.order($0)) }, showOrders: { tab = 1 })
+                            case 1: OrdersScreen(openOrder: { path.append(.order($0)) })
+                            case 2: MenuScreen()
+                            case 3: StopListScreen(openMenu: { tab = 2 })
+                            default: SettingsScreen(openReport: { path.append(.report) }, openReviews: { path.append(.reviews) })
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        TabBar(tab: $tab, badge: model.queue.count)
+                        TabBar(tab: $tab, badge: model.queue.count, stopBadge: menu.stoppedCount)
                     }
                     .lgScreen()
                     .toolbar(.hidden, for: .navigationBar)
-                    .navigationDestination(for: String.self) { OrderDetailScreen(orderId: $0) }
+                    .navigationDestination(for: Route.self) { route in
+                        switch route {
+                        case .order(let id): OrderDetailScreen(orderId: id)
+                        case .report: ReportScreen(standalone: true)
+                        case .reviews: ReviewsScreen()
+                        }
+                    }
                 }
                 if !model.queue.isEmpty && !model.minimized {
-                    AlertScreen(openOrder: { id in model.minimize(); path.append(id) }).transition(.opacity)
+                    AlertScreen(openOrder: { id in model.minimize(); path.append(.order(id)) }).transition(.opacity)
                 }
             } else {
                 LoginScreen()
@@ -47,7 +58,8 @@ struct RootView: View {
 struct TabBar: View {
     @Binding var tab: Int
     let badge: Int
-    private let items: [(String, String)] = [("ic_home", "Asosiy"), ("ic_orders", "Buyurtmalar"), ("ic_report", "Hisobot"), ("ic_profile", "Profil")]
+    var stopBadge = 0
+    private let items: [(String, String)] = [("ic_home", "Asosiy"), ("ic_orders", "Buyurtmalar"), ("ic_book", "Menyu"), ("ic_ban", "Stop List"), ("ic_profile", "Profil")]
     var body: some View {
         HStack {
             ForEach(items.indices, id: \.self) { i in
@@ -55,8 +67,9 @@ struct TabBar: View {
                     VStack(spacing: 4) {
                         ZStack(alignment: .topTrailing) {
                             LgIcon(name: items[i].0, color: tab == i ? Dt.green : Dt.textMuted, size: 24)
-                            if i == 1 && badge > 0 {
-                                Text("\(badge)").font(.system(size: 10, weight: .bold)).foregroundStyle(Dt.onAccent)
+                            let count = i == 1 ? badge : (i == 3 ? stopBadge : 0)
+                            if count > 0 {
+                                Text("\(count)").font(.system(size: 10, weight: .bold)).foregroundStyle(Dt.onAccent)
                                     .padding(.horizontal, 5).padding(.vertical, 1).background(Dt.red, in: Capsule()).offset(x: 10, y: -6)
                             }
                         }

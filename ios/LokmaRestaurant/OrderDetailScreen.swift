@@ -2,7 +2,9 @@ import SwiftUI
 
 struct OrderDetailScreen: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var menu: MenuStore
     @Environment(\.dismiss) private var dismiss
+    @State private var lightbox: LightboxItem?
     let orderId: String
     private var order: RestaurantOrder? { model.orders.first { $0.id == orderId } }
 
@@ -30,6 +32,7 @@ struct OrderDetailScreen: View {
         .lgScreen()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .fullScreenCover(item: $lightbox) { ImageLightbox(url: $0.url) }
     }
 
     @ViewBuilder private func content(_ o: RestaurantOrder) -> some View {
@@ -63,8 +66,9 @@ struct OrderDetailScreen: View {
                 ForEach(Array(o.items.enumerated()), id: \.offset) { i, item in
                     if i > 0 { Rectangle().fill(Dt.line).frame(height: 1).padding(.vertical, 10) }
                     HStack(spacing: 12) {
-                        LgIcon(name: "ic_utensils", color: Dt.textMuted, size: 20).frame(width: 44, height: 44)
-                            .background(Dt.cardHigh, in: RoundedRectangle(cornerRadius: 10))
+                        // Order items carry only the dish id: the photo comes from the live menu. Tap = full size.
+                        let photo = item.imageUrl ?? menu.imageURL(forDish: item.dishId)
+                        DishThumb(url: photo, size: 56) { if let photo { lightbox = LightboxItem(url: photo) } }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name).font(.system(size: 15, weight: .semibold))
                             Text("× \(item.quantity)").font(.system(size: 12)).foregroundStyle(Dt.textSecondary)

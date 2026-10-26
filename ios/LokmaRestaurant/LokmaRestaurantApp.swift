@@ -4,6 +4,6 @@ import SwiftUI
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
     var body: some Scene {
-        WindowGroup { RootView().environmentObject(model) }
+        WindowGroup { RootView().environmentObject(model).environmentObject(model.menu) }
     }
 }

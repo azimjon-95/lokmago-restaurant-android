@@ -2,7 +2,9 @@ import SwiftUI
 import Charts
 
 struct ReportScreen: View {
+    var standalone = false
     @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
 
     private func todayLabel() -> String {
         let months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"]
@@ -15,7 +17,10 @@ struct ReportScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Dt.spaceGap) {
-                Text("Hisobot").font(.system(size: 26, weight: .heavy)).padding(.top, 8)
+                HStack(spacing: 12) {
+                    if standalone { Button { dismiss() } label: { LgIcon(name: "ic_arrow_left").frame(width: 36, height: 36) }.buttonStyle(.plain) }
+                    Text("Hisobot").font(.system(size: 26, weight: .heavy))
+                }.padding(.top, 8)
                 SectionCard(bg: Dt.cardStat) {
                     HStack {
                         Text(todayLabel()).font(.system(size: 15, weight: .semibold))
@@ -29,6 +34,7 @@ struct ReportScreen: View {
             .padding(Dt.spaceScreen)
         }
         .refreshable { await model.refresh() }
+        .modifier(StandalonePage(enabled: standalone))
     }
 
     @ViewBuilder private func content(_ s: TodayStats) -> some View {
@@ -86,5 +92,13 @@ struct ReportScreen: View {
             Circle().fill(color).frame(width: 10, height: 10)
             Text(title).font(.system(size: 14)); Spacer(minLength: 16); Text("\(pct)%").font(.system(size: 14, weight: .semibold))
         }.frame(width: 130)
+    }
+}
+
+/// When the report is opened as its own page (from Profil) it needs the dark background and no system navigation bar.
+private struct StandalonePage: ViewModifier {
+    let enabled: Bool
+    func body(content: Content) -> some View {
+        if enabled { content.lgScreen().navigationBarBackButtonHidden(true).toolbar(.hidden, for: .navigationBar) } else { content }
     }
 }

@@ -11,8 +11,8 @@ struct LoginScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            LgIcon(name: "ic_chef_hat", color: Dt.orange, size: 72)
-            Text("LokmaGo Restoran").font(.system(size: 26, weight: .heavy)).padding(.top, 10)
+            Image("logo_lgo").resizable().scaledToFit().frame(width: 104, height: 104).clipShape(RoundedRectangle(cornerRadius: 24))
+            Text("LGO Business").font(.system(size: 26, weight: .heavy)).padding(.top, 12)
             Text("Restoran login va paroli bilan kiring").font(.system(size: 14)).foregroundStyle(Dt.textMuted).padding(.top, 2)
 
             VStack(spacing: 12) {

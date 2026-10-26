@@ -10,6 +10,7 @@ Buyurtma tafsiloti, Hisobot (grafiklar), Sozlamalar (+ «Ogohlantirish tayyorlig
 * Xcode: `LokmaRestaurant.xcodeproj` → Signing & Capabilities: **Push Notifications** va **Time Sensitive Notifications** (entitlement
   fayli ulangan). Haqiqiy qurilmada ishga tushiring.
 * Yopiq ilovada ogohlantirish uchun serverdan APNs push kerak: [docs/ALERTS.md](../docs/ALERTS.md), [docs/SERVER-PUSH.md](../docs/SERVER-PUSH.md).
+* Menyu / Stop List / Mijozlar izohlari / buyurtmadagi taom rasmi: [docs/MENU.md](../docs/MENU.md). Rasm tanlash uchun `PhotosPicker` (ruxsat so'ralmaydi).
 * Ovoz: `tools/sound/make_sounds.sh` (docs/SOUND.md).
 
 Holat: kod Linux'da yozilgan, Xcode'da hali yig'ilmagan. Birinchi build'da kichik kompilyatsiya xatolari chiqishi mumkin —
