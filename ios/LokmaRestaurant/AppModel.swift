@@ -83,9 +83,6 @@ enum Prefs {
         case .active:
             AlertCenter.shared.cancelBackgroundAlerts()
             Task { await start() }
-        case .background:
-            // The app is about to be suspended: if orders are still unaccepted, let the system keep nudging.
-            if !queue.isEmpty && !silenced { AlertCenter.shared.scheduleBackgroundAlerts(for: queue) }
         default: break
         }
     }
@@ -106,6 +103,9 @@ enum Prefs {
     }
 
     func signOut() {
+        if let auth = token, let hex = UserDefaults.standard.string(forKey: "apns-token") {
+            Task { try? await api.unregisterDevice(token: hex, bearer: auth) }
+        }
         pollingTask?.cancel(); socket.disconnect(); AlertCenter.shared.stopRinging(); AlertCenter.shared.cancelBackgroundAlerts()
         menu.reset()
         token = nil; restaurant = nil; orders = []; stats = nil; online = false; knownPending = []; silenced = false; minimized = false
@@ -200,9 +200,18 @@ enum Prefs {
     }
     private func registerStoredPushToken() {
         guard isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") else { return }
-        Task { try? await api.registerDevice(token: hex) }     // 404 until the server implements it: harmless
+        Task { try? await api.registerDevice(token: hex) }
     }
     func pushArrived() { Task { await refresh() } }
+
+    /// Lock-screen action; orderFlow on the server validates that it is still pending.
+    func handleOrderNotificationAction(orderId: String, status: String) {
+        guard status == "accepted" || status == "cancelled" else { return }
+        Task {
+            do { _ = try await api.setStatus(id: orderId, status: status); await refresh() }
+            catch { handle(error); await refresh() }
+        }
+    }
 
     func startPolling() {
         pollingTask?.cancel()

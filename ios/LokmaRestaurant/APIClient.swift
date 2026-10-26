@@ -48,11 +48,11 @@ final class APIClient {
 
     /// Same as `request`, for endpoints whose reply body we do not need (it may be empty).
     @discardableResult
-    func requestRaw(_ path: String, method: String, body: Encodable? = nil, json: [String: Any]? = nil) async throws -> Data {
+    func requestRaw(_ path: String, method: String, body: Encodable? = nil, json: [String: Any]? = nil, bearer: String? = nil) async throws -> Data {
         guard let endpoint = URL(string: path, relativeTo: AppConfig.apiBaseURL)?.absoluteURL else { throw APIError.http(0, "API manzili noto'g'ri") }
         var request = URLRequest(url: endpoint)
         request.httpMethod = method
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let auth = bearer ?? token { request.setValue("Bearer \(auth)", forHTTPHeaderField: "Authorization") }
         if let body { request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try encoder.encode(AnyEncodable(body)) }
         if let json { request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try JSONSerialization.data(withJSONObject: json) }
         let (data, response) = try await session.data(for: request)
@@ -103,9 +103,17 @@ final class APIClient {
     func uploadSignature(folder: String = "dishes") async throws -> UploadSignature { try await request("upload/signature?folder=\(folder)") }
 
     func history(day: String) async throws -> HistoryPage { try await request("panel/orders/history?from=\(day)&to=\(day)&limit=200") }
-    /// Push token for background alerts. The server endpoint is described in docs/SERVER-PUSH.md; until it exists a 404 is expected and ignored.
+    /// APNs token for background order alerts; server maps it to the authenticated restaurant.
     func registerDevice(token: String) async throws {
-        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"))
+        #if DEBUG
+        let environment = "development"
+        #else
+        let environment = "production"
+        #endif
+        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios", environment: environment))
+    }
+    func unregisterDevice(token: String, bearer: String) async throws {
+        _ = try await requestRaw("panel/devices", method: "DELETE", body: DeviceTokenRequest(token: token), bearer: bearer)
     }
     func setStatus(id: String, status: String) async throws -> RestaurantOrder {
         try await request("panel/orders/\(id)/status", method: "PATCH", body: StatusRequest(status: status))
@@ -120,3 +128,4 @@ private struct AnyEncodable: Encodable {
     init(_ value: Encodable) { encodeValue = { encoder in try value.encode(to: encoder) } }
     func encode(to encoder: Encoder) throws { try encodeValue(encoder) }
 }
+private struct DeviceTokenRequest: Encodable { let token: String }

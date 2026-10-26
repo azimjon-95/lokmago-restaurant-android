@@ -34,10 +34,11 @@ Shuning uchun:
 | Holat | Natija |
 |---|---|
 | Ilova ochiq | To'liq ekranli signal: takrorlanuvchi ovoz (jim tugma yoqilgan bo'lsa ham eshitiladi) + vibratsiya, qabul qilinguncha |
-| Ilova fonda, qabul qilinmagan buyurtma bor | Tizim 6 marta (har ~25 s) ovozli «Time Sensitive» bildirishnoma ko'rsatadi (`AlertCenter.scheduleBackgroundAlerts`) |
-| Ilova yopiq / telefon bloklangan | **Faqat serverdan APNs push** uyg'otadi. Push ovozi ≤30 s. Takrorlash — serverning ishi (qabul qilinguncha har 30 s qayta yuboradi) |
+| Ilova fonda yoki telefon bloklangan | APNs server pending buyurtmaga 28 soniyalik custom ovozli «Time Sensitive» pushni har 30 soniyada yuboradi |
+| Ilova yopiq / telefon bloklangan | APNs server push'i kerak. APNs kodi mavjud; Apple `.p8` kaliti server muhitiga qo'yilib server qayta ishga tushgach, pending buyurtmaga 28 soniyalik ovozli push har 30 soniyada takrorlanadi |
 
-Server push'i hozir yo'q → iOS'da yopiq ilova yangi buyurtmani bilmaydi. Shartnoma: [SERVER-PUSH.md](SERVER-PUSH.md).
+APNs kaliti sozlanmagan bo'lsa → iOS'da ilova yopiq paytda yangi buyurtma pushi kelmaydi. Shartnoma va kalit sozlamasi: [SERVER-PUSH.md](SERVER-PUSH.md).
+Bildirishnomadagi «Qabul qilish» / «Bekor qilish» tugmalari order status API'siga ulanadi.
 
 **«Bezovta qilmang» / Fokus rejimini ham yorib o'tish:** `time-sensitive` (kodda tayyor) yetarli bo'lishi mumkin; to'liq
 yorib o'tish (jim tugmani ham) uchun Apple'dan **Critical Alerts** entitlement so'rash kerak

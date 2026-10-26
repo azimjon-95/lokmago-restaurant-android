@@ -81,7 +81,7 @@ struct SettingsScreen: View {
         .onChange(of: scenePhase) { _, p in if p == .active { Task { checks = await AlertCenter.shared.readiness() } } }   // back from system settings
     }
 
-    private func group<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
+    private func group<C: View>(_ title: String, @ViewBuilder _ content: @escaping () -> C) -> some View {
         VStack(alignment: .leading, spacing: Dt.spaceGap) {
             Text(title).font(.system(size: 15, weight: .bold)).padding(.top, 6)
             SectionCard { content() }

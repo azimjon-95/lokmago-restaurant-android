@@ -8,11 +8,8 @@ struct ReadinessRow: Identifiable { let id: String; let title: String; let hint:
 ///
 /// What iOS allows (and what it does not):
 ///  • App open  → looping alarm + haptics until the order is accepted (like Android).
-///  • App closed / phone locked → ONLY a push notification can wake it. The server must send an APNs push with the
-///    custom sound (≤30 s) and `interruption-level: time-sensitive` (docs/SERVER-PUSH.md). iOS has no way for an app
-///    to keep ringing in the background on its own; a repeating alarm is done by the server re-sending the push.
-///  • Local notifications below only cover the gap when the app WAS running with unaccepted orders and then went to
-///    the background (they repeat a few times; they are cancelled the moment the app comes back).
+///  • App closed / phone locked → APNs alert with a custom sound (≤30 s). The server repeats it while order status
+///    remains pending (docs/SERVER-PUSH.md). iOS does not allow indefinite app audio in the background.
 @MainActor
 final class AlertCenter {
     static let shared = AlertCenter()
@@ -49,28 +46,16 @@ final class AlertCenter {
     // ---- permissions ---------------------------------------------------------------------------------
     @discardableResult
     func requestAuthorization() async -> Bool {
-        let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        let accept = UNNotificationAction(identifier: "ORDER_ACCEPT", title: "Qabul qilish", options: [.foreground])
+        let cancel = UNNotificationAction(identifier: "ORDER_CANCEL", title: "Bekor qilish", options: [.foreground, .destructive])
+        let category = UNNotificationCategory(identifier: "NEW_ORDER", actions: [accept, cancel], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+        let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .timeSensitive])) ?? false
         if ok { UIApplication.shared.registerForRemoteNotifications() }
         return ok
     }
 
-    // ---- gap cover: app had unaccepted orders and went to the background ----------------------------
-    func scheduleBackgroundAlerts(for queue: [RestaurantOrder]) {
-        cancelBackgroundAlerts()
-        guard let head = queue.first else { return }
-        let center = UNUserNotificationCenter.current()
-        for i in 0..<6 {
-            let c = UNMutableNotificationContent()
-            c.title = "🔔 Yangi buyurtma"
-            c.body = queue.count > 1 ? "#\(head.number) • \(som(head.total)) — yana \(queue.count - 1) ta kutmoqda" : "#\(head.number) • \(som(head.total)) — qabul qilinmagan"
-            c.sound = UNNotificationSound(named: UNNotificationSoundName(soundFile))
-            c.interruptionLevel = .timeSensitive
-            c.threadIdentifier = "orders"
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5 + 25 * Double(i), repeats: false)
-            center.add(UNNotificationRequest(identifier: "order-alert-\(i)", content: c, trigger: trigger))
-        }
-    }
-
+    // Clear any scheduled reminders left by older builds.
     func cancelBackgroundAlerts() {
         let ids = (0..<6).map { "order-alert-\($0)" }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)

@@ -8,7 +8,7 @@ Lokma Go Restoran restoran xodimlariga Lokma Go tizimidagi buyurtmalarni boshqar
 
 ## Ma’lumotlar
 
-- **Hisob va autentifikatsiya:** xodim login/paroli kirish uchun serverga yuboriladi; kirishdan so‘ng olingan session token iOS Keychain’da saqlanadi.
+- **Hisob va autentifikatsiya:** restoran akkauntining login va paroli autentifikatsiya uchun serverga yuboriladi; kirishdan so‘ng olingan session token iOS Keychain’da saqlanadi.
 - **Buyurtma va mijoz ma’lumotlari:** buyurtmani bajarish uchun API’dan buyurtma tarkibi, buyurtma holati, mijoz ismi, telefon raqami, yetkazib berish manzili, to‘lov turi va buyurtma summalari olinishi mumkin. Ilova bu ma’lumotlarni vakolatli restoran xodimlariga ko‘rsatadi.
 - **Texnik ma’lumotlar:** server va tarmoq xatolarini qayta ishlashda so‘rov va qurilma tarmoq ma’lumotlari xizmat ko‘rsatuvchi tizimlarda qayd etilishi mumkin. Aniq loglar, muddat va provayderlar server egasi tomonidan tasdiqlanishi shart.
 

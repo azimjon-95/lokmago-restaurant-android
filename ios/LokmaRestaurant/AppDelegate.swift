@@ -22,7 +22,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        await MainActor.run { AppModel.shared?.pushArrived() }
+        let orderId = response.notification.request.content.userInfo["orderId"] as? String
+        let action = response.actionIdentifier
+        await MainActor.run {
+            if action == "ORDER_ACCEPT", let orderId { AppModel.shared?.handleOrderNotificationAction(orderId: orderId, status: "accepted") }
+            else if action == "ORDER_CANCEL", let orderId { AppModel.shared?.handleOrderNotificationAction(orderId: orderId, status: "cancelled") }
+            else { AppModel.shared?.pushArrived() }
+        }
     }
 
     /// Silent / content-available push: refresh quickly so the list is current when the user opens the app.
