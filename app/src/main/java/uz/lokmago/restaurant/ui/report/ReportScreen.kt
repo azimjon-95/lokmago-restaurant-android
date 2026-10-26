@@ -7,6 +7,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -44,11 +46,14 @@ class ReportViewModel @Inject constructor(private val repo: OrderRepository, coo
 }
 
 @Composable
-fun ReportScreen(vm: ReportViewModel = hiltViewModel()) {
+fun ReportScreen(onBack: (() -> Unit)? = null, vm: ReportViewModel = hiltViewModel()) {
     val s by vm.stats.collectAsStateWithLifecycle()
     val err by vm.error.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Hisobot", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (onBack != null) Box(Modifier.size(36.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp)).clickable(onClick = onBack), contentAlignment = Alignment.Center) { LgIcon(R.drawable.ic_arrow_left) }
+            Text("Hisobot", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        }
         SectionCard(bg = Lg.CardStat) { Row(verticalAlignment = Alignment.CenterVertically) { Text(todayLabel(), color = Lg.Text, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); LgIcon(R.drawable.ic_calendar, Lg.TextSecondary, 20.dp) } }
         val d = s
         if (d == null) { Text(err ?: "Yuklanmoqda…", color = Lg.Muted); return@Column }

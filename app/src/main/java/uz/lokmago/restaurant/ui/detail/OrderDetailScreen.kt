@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.R
 import uz.lokmago.restaurant.data.repo.AppError
+import uz.lokmago.restaurant.data.repo.MenuStore
 import uz.lokmago.restaurant.data.repo.OrderRepository
 import uz.lokmago.restaurant.domain.Order
 import uz.lokmago.restaurant.domain.OrderStatus
@@ -43,8 +44,10 @@ data class DetailUi(val order: Order? = null, val loading: Boolean = true, val e
 
 @HiltViewModel
 class OrderDetailViewModel @Inject constructor(
-    saved: SavedStateHandle, private val repo: OrderRepository, private val coordinator: OrderCoordinator,
+    saved: SavedStateHandle, private val repo: OrderRepository, private val coordinator: OrderCoordinator, menu: MenuStore,
 ) : ViewModel() {
+    /** Order items carry only dishId; the photo comes from the live menu. */
+    val dishes = menu.dishes
     private val id: String = checkNotNull(saved["id"])
     val ui = MutableStateFlow(DetailUi())
 
@@ -92,6 +95,9 @@ class OrderDetailViewModel @Inject constructor(
 fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
+    val dishes by vm.dishes.collectAsStateWithLifecycle()
+    var lightbox by remember { mutableStateOf<String?>(null) }
+    lightbox?.let { ImageLightbox(it) { lightbox = null } }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.clickableNoRipple(onBack)) { LgIcon(R.drawable.ic_arrow_left) }
@@ -133,7 +139,8 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                         o.items.forEachIndexed { i, it ->
                             if (i > 0) HorizontalDivider(color = Lg.Line, modifier = Modifier.padding(vertical = 10.dp))
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                AsyncImage(it.imageUrl, null, Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Lg.Surface))
+                                val img = it.imageUrl ?: dishes.firstOrNull { d -> d.id == it.dishId }?.imageUrl
+                                DishThumb(img, 56.dp, onClick = img?.let { u -> { lightbox = u } })
                                 Column(Modifier.weight(1f)) { Text(it.name, color = Lg.Text, fontWeight = FontWeight.SemiBold); Text("× ${it.quantity}", color = Lg.TextSecondary, fontSize = 12.sp) }
                                 Text(it.lineTotal.som(), color = Lg.Text, fontSize = 14.sp)
                             }

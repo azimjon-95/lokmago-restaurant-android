@@ -18,7 +18,7 @@ interface LokmaApi {
     /** Oxirgi 80 ta (zal buyurtmalarisiz); status = null — hammasi. */
     @GET("panel/orders") suspend fun orders(@Query("status") status: String?): List<OrderDto>
     @GET("panel/orders/history") suspend fun history(
-        @Query("from") from: String?, @Query("to") to: String?, @Query("limit") limit: Int = 200,
+        @Query("from") from: String?, @Query("to") to: String?, @Query("limit") limit: Int = 200, @Query("cursor") cursor: String? = null,
     ): HistoryPage
     @GET("panel/orders/{id}") suspend fun order(@Path("id") id: String): OrderDto
     /** Qabul qilish ham, keyingi holatlar ham shu bitta yo'l (admin panel bilan bir xil qoidalar). */
@@ -27,4 +27,13 @@ interface LokmaApi {
     @POST("panel/orders/{id}/confirm-delivered") suspend fun confirmDelivered(@Path("id") id: String): OrderDto
 
     @GET("panel/stats") suspend fun stats(@Query("from") from: String, @Query("to") to: String): PanelStatsDto
+
+    // ---- Menyu va Stop List (admin panel bilan bir xil endpointlar) ----
+    @GET("panel/dishes") suspend fun dishes(): List<DishDto>
+    @POST("panel/dishes") suspend fun createDish(@Body body: kotlinx.serialization.json.JsonObject): DishDto
+    @PATCH("panel/dishes/{id}") suspend fun updateDish(@Path("id") id: String, @Body body: kotlinx.serialization.json.JsonObject): DishDto
+    /** stop = true → taom STOP-listga tushadi (isAvailable = false). */
+    @PATCH("panel/dishes/{id}/stop") suspend fun stopDish(@Path("id") id: String, @Body body: StopRequest): DishDto
+    @DELETE("panel/dishes/{id}") suspend fun deleteDish(@Path("id") id: String): OkDto
+    @GET("upload/signature") suspend fun uploadSignature(@Query("folder") folder: String): UploadSignatureDto
 }

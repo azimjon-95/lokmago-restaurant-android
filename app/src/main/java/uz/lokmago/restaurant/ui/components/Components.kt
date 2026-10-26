@@ -195,3 +195,11 @@ fun EmptyState(icon: Int, title: String, hint: String) =
 
 @Composable
 fun outlinedBorder() = BorderStroke(1.dp, Lg.Line)
+
+/** Text-field colours shared by the login and the dish form. */
+@Composable
+fun lgFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Lg.Green, unfocusedBorderColor = Lg.Line, focusedContainerColor = Lg.Card, unfocusedContainerColor = Lg.Card,
+    focusedTextColor = Lg.Text, unfocusedTextColor = Lg.Text, cursorColor = Lg.Green,
+    focusedLabelColor = Lg.Green, unfocusedLabelColor = Lg.Muted,
+)

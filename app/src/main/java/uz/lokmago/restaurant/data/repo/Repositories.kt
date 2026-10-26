@@ -17,6 +17,7 @@ import uz.lokmago.restaurant.domain.DayStats
 import uz.lokmago.restaurant.domain.Fulfillment
 import uz.lokmago.restaurant.domain.Order
 import uz.lokmago.restaurant.domain.OrderStatus
+import uz.lokmago.restaurant.domain.Review
 
 /** Restoran vaqti (server hisobotlari ham shu zonada). */
 private val TASHKENT: ZoneId = ZoneId.of("Asia/Tashkent")
@@ -60,6 +61,25 @@ class OrderRepository @Inject constructor(private val api: LokmaApi) {
      * Bugungi hisobot: server kunlik statistikasi (bugun va kecha — farq uchun) + soatlik tushum grafigi
      * (bugungi buyurtmalar tarixidan, yetkazilganlar bo'yicha).
      */
+    /**
+     * Mijoz izohlari: server alohida endpoint bermaydi, baho/izoh buyurtmaning o'zida (Order.rating/comment).
+     * Oxirgi [days] kun tarixi sahifalab o'qiladi va faqat bahosi yoki izohi borlari qoldiriladi.
+     */
+    suspend fun reviews(days: Long = 120, maxPages: Int = 12): List<Review> {
+        val to = LocalDate.now(TASHKENT)
+        val from = to.minusDays(days)
+        val out = mutableListOf<Review>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            val page = apiCall { api.history(from.toString(), to.toString(), 200, cursor) }
+            page.items.mapNotNullTo(out) { it.toReview() }
+            cursor = page.nextCursor
+            pages++
+        } while (page.hasMore && cursor != null && pages < maxPages)
+        return out.sortedByDescending { it.atMillis }
+    }
+
     suspend fun today(): DayStats = coroutineScope {
         val today = LocalDate.now(TASHKENT)
         val yesterday = today.minusDays(1)

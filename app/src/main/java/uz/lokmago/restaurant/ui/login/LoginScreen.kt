@@ -1,5 +1,9 @@
 package uz.lokmago.restaurant.ui.login
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -69,9 +73,9 @@ fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
     fun submit() { focus.clearFocus(); vm.login(login, pass) }
 
     Column(Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        LgIcon(R.drawable.ic_chef_hat, Lg.Orange, 72.dp)
-        Spacer(Modifier.height(10.dp))
-        Text("LokmaGo Restoran", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        Image(painterResource(R.drawable.logo_lgo), contentDescription = "LGO Business", modifier = Modifier.size(104.dp).clip(RoundedCornerShape(24.dp)))
+        Spacer(Modifier.height(12.dp))
+        Text("LGO Business", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
         Text("Restoran login va paroli bilan kiring", color = Lg.Muted, fontSize = 14.sp)
         Spacer(Modifier.height(28.dp))
         OutlinedTextField(login, { login = it; vm.clearError() }, Modifier.fillMaxWidth(), label = { Text("Login") }, singleLine = true,

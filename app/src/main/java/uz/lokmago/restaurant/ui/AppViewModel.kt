@@ -11,6 +11,7 @@ import uz.lokmago.restaurant.alert.AlertController
 import uz.lokmago.restaurant.data.local.SessionStore
 import uz.lokmago.restaurant.data.local.SettingsStore
 import uz.lokmago.restaurant.data.repo.AuthRepository
+import uz.lokmago.restaurant.data.repo.MenuStore
 import uz.lokmago.restaurant.data.remote.dto.VersionDto
 import uz.lokmago.restaurant.realtime.*
 
@@ -24,9 +25,12 @@ class AppViewModel @Inject constructor(
     private val alert: AlertController,
     private val auth: AuthRepository,
     private val settings: SettingsStore,
+    menu: MenuStore,
 ) : ViewModel() {
 
     val session = sessionStore.session
+    /** Stop List tab badge — live (socket `dish:stop`). */
+    val stoppedCount = menu.stoppedCount
     val queue = coordinator.queue.state
     val silenced = alert.silenced
     val online: StateFlow<Boolean> = combine(net.online, socket.connected) { n, s -> n && s }

@@ -57,7 +57,7 @@ class SettingsViewModel @Inject constructor(private val store: SettingsStore, se
 }
 
 @Composable
-fun SettingsScreen(onLogout: () -> Unit, vm: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenReviews: () -> Unit = {}, vm: SettingsViewModel = hiltViewModel()) {
     val cfg by vm.settings.collectAsStateWithLifecycle()
     val session by vm.session.collectAsStateWithLifecycle()
     val checks by vm.checks.collectAsStateWithLifecycle()
@@ -71,6 +71,11 @@ fun SettingsScreen(onLogout: () -> Unit, vm: SettingsViewModel = hiltViewModel()
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Dt.spaceScreen), verticalArrangement = Arrangement.spacedBy(Dt.spaceGap)) {
         Text("Sozlamalar", color = Lg.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
+
+        Group("Biznes") {
+            Row2(R.drawable.ic_report, "Hisobot", "Savdo va grafiklar") { onOpenReport() }
+            Row2(R.drawable.ic_message, "Mijozlar izohlari", "Baho va fikrlar", last = true) { onOpenReviews() }
+        }
 
         Group("Buyurtmalar") {
             Toggle(R.drawable.ic_volume, "Buyurtma ovozi", cfg.sound, vm::sound)

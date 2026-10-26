@@ -83,6 +83,7 @@ class OrderCoordinator @Inject constructor(
         scope.launch {
             socket.events.collect { e ->
                 when (e) {
+                    SocketEvent.MenuChanged -> Unit                                   // MenuStore handles it
                     SocketEvent.Connected -> { syncPending(); devices.register() }   // reconnect ⇒ re-sync, nothing is lost
                     is SocketEvent.OrderNew -> ingest(e.order)
                     is SocketEvent.OrderUpdated -> { queue.offer(e.order).also { if (it) arrived(e.order) }; _changes.emit(e.order) }

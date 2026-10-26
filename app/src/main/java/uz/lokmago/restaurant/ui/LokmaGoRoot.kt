@@ -30,6 +30,9 @@ import uz.lokmago.restaurant.ui.components.PrimaryButton
 import uz.lokmago.restaurant.ui.detail.OrderDetailScreen
 import uz.lokmago.restaurant.ui.home.HomeScreen
 import uz.lokmago.restaurant.ui.login.LoginScreen
+import uz.lokmago.restaurant.ui.menu.MenuScreen
+import uz.lokmago.restaurant.ui.menu.StopListScreen
+import uz.lokmago.restaurant.ui.reviews.ReviewsScreen
 import uz.lokmago.restaurant.ui.orders.OrdersScreen
 import uz.lokmago.restaurant.ui.report.ReportScreen
 import uz.lokmago.restaurant.ui.settings.SettingsScreen
@@ -55,6 +58,7 @@ fun LokmaGoRoot(
     val alertVisible by vm.alertVisible.collectAsStateWithLifecycle()
     val silenced by vm.silenced.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val stoppedCount by vm.stoppedCount.collectAsStateWithLifecycle()
     val req by openRequest.collectAsStateWithLifecycle()
     val ready by updateReady.collectAsStateWithLifecycle()
     val blocking by updateBlocking.collectAsStateWithLifecycle()
@@ -86,12 +90,15 @@ fun LokmaGoRoot(
                 composable("login") { LoginScreen() }
                 composable("main") {
                     MainTabs(
-                        queue = queue, online = online, notificationsOn = notificationsOn,
+                        queue = queue, online = online, notificationsOn = notificationsOn, stoppedCount = stoppedCount,
+                        onOpenReport = { nav.navigate("report") }, onOpenReviews = { nav.navigate("reviews") },
                         onOpenOrder = { nav.navigate("order/$it") }, onLogout = vm::logout,
                         onFixNotifications = { ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)) },
                     )
                 }
                 composable("order/{id}") { OrderDetailScreen(onBack = { nav.popBackStack() }) }
+                composable("report") { Box(Modifier.statusBarsPadding()) { ReportScreen(onBack = { nav.popBackStack() }) } }
+                composable("reviews") { Box(Modifier.statusBarsPadding()) { ReviewsScreen(onBack = { nav.popBackStack() }) } }
             }
             if (alertVisible) AlertScreen(
                 state = queue, silenced = silenced, busy = busy, online = online,
@@ -105,12 +112,13 @@ fun LokmaGoRoot(
 
 private enum class Tab(val label: String, val icon: Int) {
     HOME("Asosiy", R.drawable.ic_home), ORDERS("Buyurtmalar", R.drawable.ic_orders),
-    REPORT("Hisobot", R.drawable.ic_report), PROFILE("Profil", R.drawable.ic_profile),
+    MENU("Menyu", R.drawable.ic_book), STOP("Stop List", R.drawable.ic_ban), PROFILE("Profil", R.drawable.ic_profile),
 }
 
 @Composable
 private fun MainTabs(
     queue: uz.lokmago.restaurant.domain.OrderQueue.State, online: Boolean, notificationsOn: Boolean,
+    stoppedCount: Int, onOpenReport: () -> Unit, onOpenReviews: () -> Unit,
     onOpenOrder: (String) -> Unit, onLogout: () -> Unit, onFixNotifications: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.HOME) }
@@ -119,8 +127,9 @@ private fun MainTabs(
             when (tab) {
                 Tab.HOME -> HomeScreen(queue, online, notificationsOn, onOpenOrder, { tab = Tab.ORDERS }, onFixNotifications, { tab = Tab.ORDERS })
                 Tab.ORDERS -> OrdersScreen(onOpenOrder, queue.size, { })
-                Tab.REPORT -> ReportScreen()
-                Tab.PROFILE -> SettingsScreen(onLogout)
+                Tab.MENU -> MenuScreen()
+                Tab.STOP -> StopListScreen(onOpenMenu = { tab = Tab.MENU })
+                Tab.PROFILE -> SettingsScreen(onLogout, onOpenReport, onOpenReviews)
             }
         }
         NavigationBar(containerColor = Lg.Surface, modifier = Modifier.navigationBarsPadding().height(72.dp), windowInsets = WindowInsets(0)) {
@@ -128,7 +137,10 @@ private fun MainTabs(
                 NavigationBarItem(
                     selected = tab == t, onClick = { tab = t },
                     icon = {
-                        BadgedBox(badge = { if (t == Tab.ORDERS && queue.size > 0) Badge(containerColor = Lg.Red) { Text("${queue.size}") } }) {
+                        BadgedBox(badge = {
+                            if (t == Tab.ORDERS && queue.size > 0) Badge(containerColor = Lg.Red) { Text("${queue.size}") }
+                            if (t == Tab.STOP && stoppedCount > 0) Badge(containerColor = Lg.Red) { Text("$stoppedCount") }
+                        }) {
                             LgIcon(t.icon, if (tab == t) Lg.Green else Lg.Muted)
                         }
                     },

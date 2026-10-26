@@ -1,6 +1,7 @@
 package uz.lokmago.restaurant.data.remote.dto
 
 import java.time.Instant
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -35,6 +36,8 @@ import uz.lokmago.restaurant.domain.*
     val unitPrice: Double = 0.0,
     val selectedOptions: List<SelectedOptionDto> = emptyList(),
     val note: String? = null,
+    /** Taom id — rasmni menyudan topish uchun (buyurtma elementida rasm yo'q). */
+    val dishId: String? = null,
 )
 @Serializable data class CustomerDto(val name: String? = null, val phone: String? = null)
 
@@ -56,6 +59,10 @@ import uz.lokmago.restaurant.domain.*
     val items: List<OrderItemDto> = emptyList(),
     /** PATCH status javobida: false = buyurtma allaqachon shu holatda edi (boshqa telefon ulgurgan). */
     val changed: Boolean? = null,
+    /** Mijoz bahosi va izohi (buyurtma yakunlangach) — Order.rating / comment / ratedAt. */
+    val rating: Int? = null,
+    val comment: String? = null,
+    val ratedAt: String? = null,
 ) {
     /** Soketdagi qisqa `{ _id, status }` (to'liq ko'rinish olinmaganda) — to'liq buyurtma emas. */
     val isPartial: Boolean get() = createdAt == null
@@ -86,7 +93,7 @@ import uz.lokmago.restaurant.domain.*
 fun OrderItemDto.toDomain(): OrderItem {
     val opts = selectedOptions.map { it.name.trim() }.filter { it.isNotEmpty() }
     val title = if (opts.isEmpty()) name else "$name (${opts.joinToString(", ")})"
-    return OrderItem(title, quantity, unitPrice.roundToLong(), null)
+    return OrderItem(title, quantity, unitPrice.roundToLong(), null, dishId)
 }
 
 @Serializable data class StatusRequest(val status: String)
@@ -114,3 +121,57 @@ fun OrderItemDto.toDomain(): OrderItem {
         val forceUpdate: Boolean = false,
     )
 }
+
+/** Mijoz izohi bo'lgan buyurtma → Review. Baho ham, matn ham yo'q bo'lsa null. */
+fun OrderDto.toReview(): Review? {
+    val text = comment?.trim().orEmpty()
+    val stars = rating?.coerceIn(1, 5)
+    if (stars == null && text.isEmpty()) return null
+    val at = (ratedAt ?: createdAt)?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() } ?: 0L
+    return Review(id, dailyNumber?.toString() ?: id.takeLast(4).uppercase(), stars ?: 0, text, customer?.name?.takeIf { it.isNotBlank() } ?: "Mijoz", at, total.roundToLong())
+}
+
+// ---- Menyu: /api/panel/dishes (controllers/restaurantPanel.js, models/Dish.js) ----
+@Serializable data class OptionDto(val name: String = "", val price: Double? = null, val mandatory: Boolean? = null)
+@Serializable data class OptionGroupDto(val title: String = "", val kind: String? = null, val options: List<OptionDto> = emptyList())
+@Serializable data class DishDto(
+    @SerialName("_id") val id: String,
+    val name: String = "",
+    val description: String? = null,
+    val category: String? = null,
+    val section: String? = null,
+    val price: Double = 0.0,
+    val oldPrice: Double? = null,
+    val prepMinutes: Int? = null,
+    val weight: String? = null,
+    val volume: String? = null,
+    val drinkType: String? = null,
+    val calories: Double? = null,
+    val protein: Double? = null,
+    val fat: Double? = null,
+    val carbs: Double? = null,
+    val imageUrl: String? = null,
+    val images: List<String> = emptyList(),
+    val isAvailable: Boolean = true,
+    val priceMode: String? = null,
+    val dineInPrice: Double? = null,
+    val optionGroups: List<OptionGroupDto> = emptyList(),
+) {
+    fun toDomain() = Dish(
+        id = id, name = name, description = description.orEmpty(), category = category ?: "milliy", section = section.orEmpty(),
+        price = price.roundToLong(), oldPrice = oldPrice?.roundToLong()?.takeIf { it > 0 }, prepMinutes = prepMinutes,
+        weight = weight.orEmpty(), volume = volume.orEmpty(), drinkType = drinkType.orEmpty(),
+        calories = calories?.roundToInt(), protein = protein?.roundToInt(), fat = fat?.roundToInt(), carbs = carbs?.roundToInt(),
+        imageUrl = imageUrl?.takeIf { it.isNotBlank() } ?: images.firstOrNull { it.isNotBlank() },
+        available = isAvailable, priceMode = priceMode ?: "sync", dineInPrice = dineInPrice?.roundToLong(),
+        groups = optionGroups.map { g -> DishGroup(g.title, g.kind, g.options.map { DishOption(it.name, (it.price ?: 0.0).roundToLong(), it.mandatory == true) }) },
+    )
+}
+@Serializable data class StopRequest(val stop: Boolean)
+@Serializable data class OkDto(val ok: Boolean = true)
+
+/** GET /api/upload/signature — Cloudinary'ga TO'G'RIDAN yuklash uchun imzo (secret telefonga tushmaydi). */
+@Serializable data class UploadSignatureDto(
+    val cloudName: String, val apiKey: String, val timestamp: Long, val folder: String,
+    val allowedFormats: String, val signature: String,
+)

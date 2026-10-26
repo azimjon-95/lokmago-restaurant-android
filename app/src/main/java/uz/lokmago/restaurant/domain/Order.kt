@@ -41,6 +41,7 @@ data class OrderItem(
     val quantity: Int,
     val price: Long,
     val imageUrl: String? = null,
+    val dishId: String? = null,
 ) {
     val lineTotal get() = price * quantity
 }

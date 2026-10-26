@@ -19,6 +19,8 @@ import uz.lokmago.restaurant.domain.Order
 
 sealed interface SocketEvent {
     data object Connected : SocketEvent
+    /** Menyu o'zgardi (taom qo'shildi/tahrirlandi/STOP/o'chirildi) — admin panel bilan bir xil `dish:stop` / `dish:update`. */
+    data object MenuChanged : SocketEvent
     data class OrderNew(val order: Order) : SocketEvent
     data class OrderUpdated(val order: Order) : SocketEvent
     /** Server to'liq ko'rinishni bera olmagan (`{ _id, status }`) — buyurtma serverdan qayta o'qiladi. */
@@ -62,6 +64,8 @@ class SocketManager @Inject constructor(private val json: Json) {
             on(Socket.EVENT_CONNECT_ERROR) { _connected.value = false }
             on("order:new") { a -> parse(a)?.let { _events.tryEmit(if (it.isPartial) SocketEvent.OrderTouched(it.id) else SocketEvent.OrderNew(it.toDomain())) } }
             on("order:update") { a -> parse(a)?.let { _events.tryEmit(if (it.isPartial) SocketEvent.OrderTouched(it.id) else SocketEvent.OrderUpdated(it.toDomain())) } }
+            on("dish:stop") { _events.tryEmit(SocketEvent.MenuChanged) }
+            on("dish:update") { _events.tryEmit(SocketEvent.MenuChanged) }
             on("order:delivery-reminder") { a -> parseReminder(a)?.let { _events.tryEmit(SocketEvent.DeliveryReminder(it.orderId, it.reminderCount)) } }
             connect()
         }
