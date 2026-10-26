@@ -35,5 +35,7 @@ interface LokmaApi {
     /** stop = true → taom STOP-listga tushadi (isAvailable = false). */
     @PATCH("panel/dishes/{id}/stop") suspend fun stopDish(@Path("id") id: String, @Body body: StopRequest): DishDto
     @DELETE("panel/dishes/{id}") suspend fun deleteDish(@Path("id") id: String): OkDto
+    /** Badge uchun arzon so'rov: faqat son. */
+    @GET("panel/dishes/stopped/count") suspend fun stoppedCount(): CountDto
     @GET("upload/signature") suspend fun uploadSignature(@Query("folder") folder: String): UploadSignatureDto
 }

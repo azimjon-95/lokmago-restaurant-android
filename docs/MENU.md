@@ -33,6 +33,19 @@ Rasm bosilsa to'liq ekranda ochiladi (ikki barmoq bilan kattalashtirish, ikki ma
 bahosi yoki izohi borlarini ko'rsatadi: o'rtacha baho, 1–5 yulduz taqsimoti, filtrlar («Hammasi», 1–5 ★, «Faqat izohli»).
 *Tavsiya (serverda):* tezroq bo'lishi uchun `GET /api/panel/reviews?cursor=` qo'shish (faqat `rating`/`comment` borlari).
 
+**Pastki menyu** (Instagram / iPhone uslubi): ekran chetlaridan ajralgan suzuvchi kapsula, faqat ikonkalar, tanlangani yumshoq
+tabletka bilan. iOS 26+ da haqiqiy «Liquid Glass» (kontent shisha ostidan o'tadi), eskisida blur material; Android'da yarim shaffof
+kapsula. Tanlashda yengil tebranish.
+
+**Menyudagi sonlar (qizil nishon) — serverdan, aniq va jonli:**
+- *Buyurtmalar* = serverdagi barcha **yangi (pending)** buyurtmalar. Ro'yxat `?status=pending` bilan alohida olinadi (umumiy ro'yxat
+  faqat oxirgi 80 ta, shuning uchun uzoq kutayotgan buyurtma tushib qolmasin). Soket (`order:new/update`) bilan bir zumda, qo'shimcha
+  har ~10 soniyada va har ochilganda qayta tekshiriladi.
+- *Stop List* = to'xtatilgan taomlar soni. `dish:stop` hodisasidagi serverning o'z `stoppedCount`i darhol qo'yiladi, so'ng ro'yxat
+  qayta yuklanadi; arzon `GET /panel/dishes/stopped/count` har ~10 soniyada serverniki bilan qiyoslab, farq bo'lsa ro'yxatni yangilaydi.
+  Server hamma o'zgarishda hodisa yubormaydi — to'liq real vaqt uchun: [SERVER-PATCH-realtime.md](SERVER-PATCH-realtime.md).
+- 99 dan oshsa «99+».
+
 **Navigatsiya:** Asosiy · Buyurtmalar · **Menyu** · **Stop List** · Profil. «Hisobot» Profil → Biznes ichiga ko'chdi
 (5 tabdan ko'p qulay emas).
 

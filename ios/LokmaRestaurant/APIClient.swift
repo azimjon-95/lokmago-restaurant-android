@@ -74,7 +74,12 @@ final class APIClient {
     /// Sliding session: yaroqli token evaziga yangi 30 kunlik token.
     func refreshToken() async throws -> String { (try await request("panel/session/refresh", method: "POST") as RefreshResponse).token }
 
-    func orders() async throws -> [RestaurantOrder] { try await request("panel/orders") }
+    /// status = "pending" → ALL new orders (the unfiltered list is only the latest 80, a long-waiting order could fall out of it).
+    func orders(status: String? = nil) async throws -> [RestaurantOrder] {
+        try await request(status == nil ? "panel/orders" : "panel/orders?status=\(status!)")
+    }
+    /// Badge uchun arzon so'rov: faqat son.
+    func stoppedCount() async throws -> Int { (try await request("panel/dishes/stopped/count") as CountResponse).count }
     func stats(day: String) async throws -> StatsResponse { try await request("panel/stats?from=\(day)&to=\(day)") }
     /// Paged history (cursor) for the reviews page.
     func historyPage(from: String, to: String, cursor: String?) async throws -> HistoryPage {

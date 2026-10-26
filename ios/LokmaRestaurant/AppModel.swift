@@ -49,10 +49,13 @@ enum Prefs {
         AppModel.shared = self
         socket.onConnected = { [weak self] in Task { @MainActor in self?.online = true; await self?.refresh(); await self?.menu.refresh() } }
         socket.onDisconnected = { [weak self] in Task { @MainActor in self?.online = false } }
-        socket.onEvent = { [weak self] name in Task { @MainActor in
-            if name.hasPrefix("order:") { await self?.refresh() }
-            if name.hasPrefix("dish:") { self?.menu.scheduleRefresh() }           // menyu / STOP o'zgardi (admin panel bilan bir xil hodisalar)
-        } }
+        socket.onEvent = { [weak self] name, payload in
+            let stopped = payload?["stoppedCount"] as? Int
+            Task { @MainActor in
+                if name.hasPrefix("order:") { await self?.refresh() }
+                if name.hasPrefix("dish:") { self?.menu.menuEvent(stoppedCount: stopped) }   // menyu / STOP o'zgardi (admin panel bilan bir xil hodisalar)
+            }
+        }
     }
 
     var isSignedIn: Bool { token != nil }
@@ -138,8 +141,12 @@ enum Prefs {
             async let t = api.stats(day: today)
             async let y = try? api.stats(day: yesterday)
             async let h = try? api.history(day: today)
-            let (orderList, todayStats, prevStats, history) = try await (all, t, y, h)
-            orders = orderList
+            async let p = try? api.orders(status: "pending")
+            let (orderList, todayStats, prevStats, history, pending) = try await (all, t, y, h, p)
+            // The unfiltered list is only the latest 80: merge the full pending list so the badge can never undercount.
+            var byId = Dictionary(orderList.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            for o in pending ?? [] { byId[o.id] = o }
+            orders = byId.values.sorted { $0.createdAt > $1.createdAt }
             stats = TodayStats(today: todayStats, yesterday: prevStats, history: history?.items ?? [])
             error = nil
             reconcileAlert()
@@ -203,7 +210,7 @@ enum Prefs {
             while !Task.isCancelled {
                 let sec = Prefs.autoRefresh
                 try? await Task.sleep(for: .seconds(sec > 0 ? sec : 15))
-                if !Task.isCancelled, sec > 0 { await self?.refresh() }
+                if !Task.isCancelled, sec > 0 { await self?.refresh(); await self?.menu.reconcile() }
             }
         }
     }

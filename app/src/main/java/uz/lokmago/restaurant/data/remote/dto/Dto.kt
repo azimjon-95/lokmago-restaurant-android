@@ -169,6 +169,7 @@ fun OrderDto.toReview(): Review? {
 }
 @Serializable data class StopRequest(val stop: Boolean)
 @Serializable data class OkDto(val ok: Boolean = true)
+@Serializable data class CountDto(val count: Int = 0)
 
 /** GET /api/upload/signature — Cloudinary'ga TO'G'RIDAN yuklash uchun imzo (secret telefonga tushmaydi). */
 @Serializable data class UploadSignatureDto(

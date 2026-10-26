@@ -10,15 +10,30 @@ import Foundation
     @Published var toast: String?
     private let api: APIClient
     private var pending: Task<Void, Never>?
+    /// The server's own number (dish:stop payload) until the next full list arrives; the list is authoritative after that.
+    @Published private var live: Int?
 
     init(api: APIClient) { self.api = api }
 
-    var stoppedCount: Int { dishes.filter { !$0.available }.count }
+    var stoppedCount: Int { live ?? dishes.filter { !$0.available }.count }
     func imageURL(forDish id: String?) -> String? { id.flatMap { id in dishes.first { $0.id == id }?.imageUrl } }
 
     func refresh() async {
-        do { dishes = try await api.dishes(); loaded = true; error = nil }
+        do { dishes = try await api.dishes(); live = nil; loaded = true; error = nil }
         catch { self.error = error.localizedDescription }
+    }
+
+    /// A `dish:*` socket event: show the server's own count at once, then reload the list (several events → one reload).
+    func menuEvent(stoppedCount: Int?) {
+        if let stoppedCount { live = stoppedCount }
+        scheduleRefresh()
+    }
+
+    /// Cheap accuracy check (a single number): if the server's stopped count differs from ours, reload the list.
+    /// Needed because the server does not push `dish:stop` for every change (STOP switch, create, delete).
+    func reconcile() async {
+        guard let server = try? await api.stoppedCount() else { return }
+        if server != dishes.filter({ !$0.available }).count || !loaded { await refresh() }
     }
 
     /// Several socket events in a row → one reload.
@@ -33,6 +48,7 @@ import Foundation
     func reset() { pending?.cancel(); dishes = []; loaded = false; error = nil }
 
     private func put(_ dish: Dish) {
+        live = nil
         if let i = dishes.firstIndex(where: { $0.id == dish.id }) { dishes[i] = dish } else { dishes.append(dish) }
     }
 

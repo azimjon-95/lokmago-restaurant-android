@@ -25,7 +25,7 @@ class AppViewModel @Inject constructor(
     private val alert: AlertController,
     private val auth: AuthRepository,
     private val settings: SettingsStore,
-    menu: MenuStore,
+    private val menu: MenuStore,
 ) : ViewModel() {
 
     val session = sessionStore.session
@@ -47,7 +47,7 @@ class AppViewModel @Inject constructor(
         // "Avto yangilash": while the app is open, re-sync the pending orders every N seconds as a safety net behind the socket.
         viewModelScope.launch {
             settings.state.map { it.autoRefreshSec }.distinctUntilChanged().collectLatest { sec ->
-                if (sec > 0) while (true) { delay(sec * 1_000L); if (session.value != null) coordinator.syncPending() }
+                if (sec > 0) while (true) { delay(sec * 1_000L); if (session.value != null) { coordinator.syncPending(); menu.reconcile() } }
             }
         }
         viewModelScope.launch { coordinator.arrivals.collect { hidden.value = false } }   // new order ⇒ alert comes back
@@ -72,7 +72,7 @@ class AppViewModel @Inject constructor(
     fun deferHead() = coordinator.deferHead()
     fun minimize() { hidden.value = true }
     fun showAlert() { hidden.value = false }
-    fun sync() { viewModelScope.launch { coordinator.syncPending() } }
+    fun sync() { viewModelScope.launch { coordinator.syncPending(); menu.reconcile() } }
     /** Sliding session: a restaurant that keeps using the app is never asked for its password again. */
     fun refreshSession() { viewModelScope.launch { auth.refreshIfStale() } }
     fun logout() { viewModelScope.launch { coordinator.logout() } }

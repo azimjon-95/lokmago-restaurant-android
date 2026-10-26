@@ -247,3 +247,5 @@ extension String {
     /// Katta ko'rinish: kesmasdan.
     func cdnFit(_ width: Int) -> String { contains("/upload/") ? replacingOccurrences(of: "/upload/", with: "/upload/f_auto,q_auto,w_\(width),c_limit/") : self }
 }
+
+struct CountResponse: Decodable { let count: Int }

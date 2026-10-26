@@ -14,19 +14,18 @@ struct RootView: View {
         ZStack {
             if model.isSignedIn {
                 NavigationStack(path: $path) {
-                    VStack(spacing: 0) {
-                        Group {
-                            switch tab {
-                            case 0: HomeScreen(openOrder: { path.append(.order($0)) }, showOrders: { tab = 1 })
-                            case 1: OrdersScreen(openOrder: { path.append(.order($0)) })
-                            case 2: MenuScreen()
-                            case 3: StopListScreen(openMenu: { tab = 2 })
-                            default: SettingsScreen(openReport: { path.append(.report) }, openReviews: { path.append(.reviews) })
-                            }
+                    Group {
+                        switch tab {
+                        case 0: HomeScreen(openOrder: { path.append(.order($0)) }, showOrders: { tab = 1 })
+                        case 1: OrdersScreen(openOrder: { path.append(.order($0)) })
+                        case 2: MenuScreen()
+                        case 3: StopListScreen(openMenu: { tab = 2 })
+                        default: SettingsScreen(openReport: { path.append(.report) }, openReviews: { path.append(.reviews) })
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        TabBar(tab: $tab, badge: model.queue.count, stopBadge: menu.stoppedCount)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // safeAreaInset: lists end ABOVE the bar, yet scroll beneath the glass like in Instagram
+                    .safeAreaInset(edge: .bottom, spacing: 0) { TabBar(tab: $tab, badge: model.queue.count, stopBadge: menu.stoppedCount) }
                     .lgScreen()
                     .toolbar(.hidden, for: .navigationBar)
                     .navigationDestination(for: Route.self) { route in
@@ -55,30 +54,61 @@ struct RootView: View {
     }
 }
 
+/// Instagram / iPhone uslubidagi suzuvchi menyu: ekran chetlaridan ajralib turgan kapsula, faqat ikonkalar, tanlangani yumshoq
+/// "tabletka" bilan ajratiladi, sonlar qizil nishonda. iOS 26+ da haqiqiy "Liquid Glass", undan eskida blur material.
 struct TabBar: View {
     @Binding var tab: Int
     let badge: Int
     var stopBadge = 0
-    private let items: [(String, String)] = [("ic_home", "Asosiy"), ("ic_orders", "Buyurtmalar"), ("ic_book", "Menyu"), ("ic_ban", "Stop List"), ("ic_profile", "Profil")]
+    private let items: [(icon: String, label: String)] = [("ic_home", "Asosiy"), ("ic_orders", "Buyurtmalar"), ("ic_book", "Menyu"), ("ic_ban", "Stop List"), ("ic_profile", "Profil")]
+
     var body: some View {
-        HStack {
+        HStack(spacing: 4) {
             ForEach(items.indices, id: \.self) { i in
-                Button { tab = i } label: {
-                    VStack(spacing: 4) {
-                        ZStack(alignment: .topTrailing) {
-                            LgIcon(name: items[i].0, color: tab == i ? Dt.green : Dt.textMuted, size: 24)
-                            let count = i == 1 ? badge : (i == 3 ? stopBadge : 0)
-                            if count > 0 {
-                                Text("\(count)").font(.system(size: 10, weight: .bold)).foregroundStyle(Dt.onAccent)
-                                    .padding(.horizontal, 5).padding(.vertical, 1).background(Dt.red, in: Capsule()).offset(x: 10, y: -6)
-                            }
+                let count = i == 1 ? badge : (i == 3 ? stopBadge : 0)
+                Button {
+                    if tab != i { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                    tab = i
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        LgIcon(name: items[i].icon, color: tab == i ? Dt.green : Dt.textSecondary, size: 26)
+                        if count > 0 {
+                            Text(count > 99 ? "99+" : "\(count)").font(.system(size: 10, weight: .bold)).foregroundStyle(Dt.onAccent)
+                                .padding(.horizontal, 5).padding(.vertical, 1).background(Dt.red, in: Capsule()).offset(x: 12, y: -8)
                         }
-                        Text(items[i].1).font(.system(size: Dt.fontNav, weight: tab == i ? .bold : .medium)).foregroundStyle(tab == i ? Dt.green : Dt.textMuted)
-                    }.frame(maxWidth: .infinity)
-                }.buttonStyle(.plain)
+                    }
+                    .frame(maxWidth: .infinity).frame(height: 54)
+                    .background { if tab == i { Capsule().fill(Color.white.opacity(0.14)) } }
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(items[i].label + (count > 0 ? ", \(count)" : "")))
             }
         }
-        .padding(.top, 10).padding(.bottom, 6)
-        .background(Dt.header.overlay(alignment: .top) { Rectangle().fill(Dt.line).frame(height: 1) }.ignoresSafeArea(edges: .bottom))
+        .padding(6)
+        .modifier(GlassCapsule())
+        .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 6)
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: tab)
+    }
+}
+
+struct GlassCapsule: ViewModifier {
+    func body(content: Content) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            legacy(content)
+        }
+        #else
+        legacy(content)
+        #endif
+    }
+
+    private func legacy(_ content: Content) -> some View {
+        content
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
     }
 }

@@ -25,6 +25,8 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.StateFlow
 import uz.lokmago.restaurant.R
 import uz.lokmago.restaurant.ui.alert.AlertScreen
+import uz.lokmago.restaurant.ui.components.BarItem
+import uz.lokmago.restaurant.ui.components.FloatingTabBar
 import uz.lokmago.restaurant.ui.components.LgIcon
 import uz.lokmago.restaurant.ui.components.PrimaryButton
 import uz.lokmago.restaurant.ui.detail.OrderDetailScreen
@@ -132,23 +134,10 @@ private fun MainTabs(
                 Tab.PROFILE -> SettingsScreen(onLogout, onOpenReport, onOpenReviews)
             }
         }
-        NavigationBar(containerColor = Lg.Surface, modifier = Modifier.navigationBarsPadding().height(72.dp), windowInsets = WindowInsets(0)) {
-            Tab.entries.forEach { t ->
-                NavigationBarItem(
-                    selected = tab == t, onClick = { tab = t },
-                    icon = {
-                        BadgedBox(badge = {
-                            if (t == Tab.ORDERS && queue.size > 0) Badge(containerColor = Lg.Red) { Text("${queue.size}") }
-                            if (t == Tab.STOP && stoppedCount > 0) Badge(containerColor = Lg.Red) { Text("$stoppedCount") }
-                        }) {
-                            LgIcon(t.icon, if (tab == t) Lg.Green else Lg.Muted)
-                        }
-                    },
-                    label = { Text(t.label, fontSize = 11.sp, fontWeight = if (tab == t) FontWeight.Bold else FontWeight.Medium) },
-                    colors = NavigationBarItemDefaults.colors(selectedIconColor = Lg.Green, selectedTextColor = Lg.Green, unselectedIconColor = Lg.Muted, unselectedTextColor = Lg.Muted, indicatorColor = androidx.compose.ui.graphics.Color.Transparent),
-                )
-            }
-        }
+        FloatingTabBar(
+            items = Tab.entries.map { BarItem(it.icon, it.label, when (it) { Tab.ORDERS -> queue.size; Tab.STOP -> stoppedCount; else -> 0 }) },
+            selected = tab.ordinal, onSelect = { tab = Tab.entries[it] }, modifier = Modifier.navigationBarsPadding(),
+        )
     }
 }
 

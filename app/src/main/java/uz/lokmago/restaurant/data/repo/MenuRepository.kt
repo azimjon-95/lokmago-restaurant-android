@@ -16,5 +16,6 @@ class MenuRepository @Inject constructor(private val api: LokmaApi, private val 
         apiCall { if (id == null) api.createDish(body) else api.updateDish(id, body) }.toDomain()
     suspend fun setStopped(id: String, stopped: Boolean): Dish = apiCall { api.stopDish(id, StopRequest(stopped)) }.toDomain()
     suspend fun delete(id: String) { apiCall { api.deleteDish(id) } }
+    suspend fun stoppedCount(): Int = apiCall { api.stoppedCount() }.count
     suspend fun uploadImage(uri: Uri): String = uploader.upload(uri)
 }

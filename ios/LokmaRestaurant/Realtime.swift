@@ -9,7 +9,8 @@ import Foundation
 final class RealtimeSocket {
     var onConnected: (() -> Void)?
     var onDisconnected: (() -> Void)?
-    var onEvent: ((String) -> Void)?
+    /// (event name, JSON object payload if there is one)
+    var onEvent: ((String, [String: Any]?) -> Void)?
 
     private var loop: Task<Void, Never>?
     private var token: String?
@@ -64,8 +65,8 @@ final class RealtimeSocket {
                     joined = true; onConnected?()
                 } else if text.hasPrefix("44") {
                     break                                           // token rejected: stop this socket, the REST layer will sign out on 401
-                } else if text.hasPrefix("42"), let name = Self.eventName(text) {
-                    onEvent?(name)
+                } else if text.hasPrefix("42"), let event = Self.parseEvent(text) {
+                    onEvent?(event.name, event.payload)
                 }
             }
         } catch { /* network drop: fall through and reconnect */ }
@@ -73,12 +74,12 @@ final class RealtimeSocket {
         return joined
     }
 
-    /// `42["order:new",{...}]` → "order:new"  (an optional numeric ack id after "42" is skipped)
-    static func eventName(_ packet: String) -> String? {
+    /// `42["dish:stop",{"stoppedCount":3}]` → ("dish:stop", ["stoppedCount": 3])  (an optional numeric ack id after "42" is skipped)
+    static func parseEvent(_ packet: String) -> (name: String, payload: [String: Any]?)? {
         let body = packet.dropFirst(2).drop(while: { $0.isNumber })
         guard let data = String(body).data(using: .utf8),
               let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
               let name = array.first as? String else { return nil }
-        return name
+        return (name, array.count > 1 ? array[1] as? [String: Any] : nil)
     }
 }
