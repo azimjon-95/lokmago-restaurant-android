@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import uz.lokmago.restaurant.R
 import uz.lokmago.restaurant.ui.alert.AlertScreen
 import uz.lokmago.restaurant.ui.components.BarItem
+import uz.lokmago.restaurant.ui.components.Conn
+import uz.lokmago.restaurant.ui.permissions.PermissionsDialog
 import uz.lokmago.restaurant.ui.components.FloatingTabBar
 import uz.lokmago.restaurant.ui.components.LgIcon
 import uz.lokmago.restaurant.ui.components.PrimaryButton
@@ -57,6 +59,9 @@ fun LokmaGoRoot(
     val session by vm.session.collectAsStateWithLifecycle()
     val queue by vm.queue.collectAsStateWithLifecycle()
     val online by vm.online.collectAsStateWithLifecycle()
+    val connection by vm.connection.collectAsStateWithLifecycle()
+    val readinessItems by vm.readinessItems.collectAsStateWithLifecycle()
+    val showPermissions by vm.showPermissions.collectAsStateWithLifecycle()
     val alertVisible by vm.alertVisible.collectAsStateWithLifecycle()
     val silenced by vm.silenced.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
@@ -66,8 +71,11 @@ fun LokmaGoRoot(
     val blocking by updateBlocking.collectAsStateWithLifecycle()
     val snack = remember { SnackbarHostState() }
 
-    var notificationsOn by remember { mutableStateOf(true) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsOn = NotificationManagerCompat.from(ctx).areNotificationsEnabled() }
+    val notificationsOn = readinessItems.all { it.ok }                       // true until the first check
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshReadiness() }   // back from system settings → recheck
+    // First login on this device: walk through the permissions ONCE, with an explanation (never silently)
+    LaunchedEffect(session != null) { if (session != null && !vm.onboarded) { vm.refreshReadiness(); vm.showPermissions.value = true } }
+    if (showPermissions) PermissionsDialog(readinessItems, onChanged = vm::refreshReadiness, onDismiss = vm::permissionsFinished)
 
     LaunchedEffect(Unit) { vm.messages.collect { snack.showSnackbar(it) } }
     LaunchedEffect(ready) {
@@ -92,10 +100,10 @@ fun LokmaGoRoot(
                 composable("login") { LoginScreen() }
                 composable("main") {
                     MainTabs(
-                        queue = queue, online = online, notificationsOn = notificationsOn, stoppedCount = stoppedCount,
+                        queue = queue, connection = connection, notificationsOn = notificationsOn, stoppedCount = stoppedCount,
                         onOpenReport = { nav.navigate("report") }, onOpenReviews = { nav.navigate("reviews") },
                         onOpenOrder = { nav.navigate("order/$it") }, onLogout = vm::logout,
-                        onFixNotifications = { ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)) },
+                        onFixNotifications = { vm.refreshReadiness(); vm.showPermissions.value = true },
                     )
                 }
                 composable("order/{id}") { OrderDetailScreen(onBack = { nav.popBackStack() }) }
@@ -119,7 +127,7 @@ private enum class Tab(val label: String, val icon: Int) {
 
 @Composable
 private fun MainTabs(
-    queue: uz.lokmago.restaurant.domain.OrderQueue.State, online: Boolean, notificationsOn: Boolean,
+    queue: uz.lokmago.restaurant.domain.OrderQueue.State, connection: Conn, notificationsOn: Boolean,
     stoppedCount: Int, onOpenReport: () -> Unit, onOpenReviews: () -> Unit,
     onOpenOrder: (String) -> Unit, onLogout: () -> Unit, onFixNotifications: () -> Unit,
 ) {
@@ -127,7 +135,7 @@ private fun MainTabs(
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Box(Modifier.weight(1f)) {
             when (tab) {
-                Tab.HOME -> HomeScreen(queue, online, notificationsOn, onOpenOrder, { tab = Tab.ORDERS }, onFixNotifications, { tab = Tab.ORDERS })
+                Tab.HOME -> HomeScreen(queue, connection, notificationsOn, onOpenOrder, { tab = Tab.ORDERS }, onFixNotifications, { tab = Tab.ORDERS })
                 Tab.ORDERS -> OrdersScreen(onOpenOrder, queue.size, { })
                 Tab.MENU -> MenuScreen()
                 Tab.STOP -> StopListScreen(onOpenMenu = { tab = Tab.MENU })

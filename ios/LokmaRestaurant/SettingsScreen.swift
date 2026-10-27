@@ -69,6 +69,7 @@ struct SettingsScreen: View {
                 }
 
                 group("Ilova") {
+                    row("ic_shield", "Ruxsatlarni sozlash", "") { model.showPermissions = true }
                     row("ic_download", "Versiya", "v" + (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"), chevron: false) {}
                     row("ic_help", "Yordam / Support", "") {}
                     row("ic_shield", "Maxfiylik siyosati", "") {}

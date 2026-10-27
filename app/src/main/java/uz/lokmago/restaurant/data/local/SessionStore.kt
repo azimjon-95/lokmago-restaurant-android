@@ -30,6 +30,11 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
 
     /** The login name (never the password) survives logout/expiry so the login form can be pre-filled. */
     val lastLogin: String get() = prefs.getString(K_LAST_LOGIN, "") ?: ""
+
+    /** Permission walk-through shown once per device (survives logout on purpose). */
+    var permissionsOnboarded: Boolean
+        get() = prefs.getBoolean("permissions_onboarded", false)
+        set(v) { prefs.edit().putBoolean("permissions_onboarded", v).apply() }
     val tokenAgeMs: Long get() = System.currentTimeMillis() - prefs.getLong(K_ISSUED, 0L)
 
     /** Stable per-install id so the backend can de-duplicate FCM tokens per device. */

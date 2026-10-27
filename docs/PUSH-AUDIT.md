@@ -10,6 +10,26 @@ Admin panelga buyurtma keldi, telefonda xabar ham, ovoz ham bo'lmadi. Ilova qo'l
 3. Natijada yagona kanal — **Socket.IO**. Android/iOS fonda va qulflangan ekranda soketni to'xtatadi (Doze, App Standby, iOS suspend),
    shuning uchun buyurtma faqat ilova ochilib soket qayta ulanganda kelardi — aynan ko'rilgan belgi.
 
+## Ikkinchi muammo: "ilovaga kirsam uyg'onmoqda" (Offline / "Internet yo'q", bo'sh ekran)
+Skrinshotda telefonda LTE bor, lekin ilova **"Internet yo'q"** deb yozardi va ma'lumot bo'sh edi; bir necha soniyadan keyin hammasi chiqardi.
+Sabablari (kodda tasdiqlangan):
+1. **"Online" = soket ulangan**, internet emas (`online = socketJoined`). Soket hali ulanmagan paytda ham "Internet yo'q" chiqardi (Android'da ham: `net && socket`).
+2. **iOS fonda ilovani muzlatadi.** Soket jimgina o'ladi, lekin eski `receive()` xato bermaydi; qayta ulanish `connect()` ichida
+   `loop != nil` bo'lgani uchun o'tkazib yuborilardi va backoff 10 s gacha kutardi. Qotgan ulanishni aniqlovchi watchdog yo'q edi.
+3. **Eski keep-alive HTTP ulanishi.** Uyg'onganda birinchi so'rovlar o'lik ulanishni qayta ishlatib `-1005 networkConnectionLost` bilan yiqilardi
+   (Xcode logidagi `tcp_input … flags=[R.] … TIME_WAIT` — shu); qayta urinish yo'q edi → ekran bo'sh.
+4. "Qabul qilish" tugmasi soketga bog'liq edi (qabul REST chaqiruv, soket kerak emas).
+5. Ruxsatlar (bildirishnoma) tushuntirishsiz, jimgina so'ralardi.
+
+Tuzatish: `NetworkMonitor` (haqiqiy internet) alohida; ulanish 3 holatli — **Online / Ulanmoqda… / Offline**, "Ulanmoqda" banneri faqat
+2.5 s dan ortiq cho'zilsa chiqadi; foreground va tarmoq tiklanishida `reconnectNow()` (backoff kutilmaydi) + eski ulanishlarni yopish;
+watchdog (server aytgan `pingInterval+pingTimeout` dan uzoq jimlik → ulanishni uzib qayta ulaydi); GET va idempotent so'rovlar
+(`status`, `confirm-delivered`, STOP, qurilma) uzilgan ulanishda 2 marta qayta uriniladi; `URLError` "Xatolik" oynasini chiqarmaydi;
+qabul tugmasi faqat internetga bog'liq. **Ruxsatlar:** birinchi kirishda tushuntirishli ketma-ket oyna (Android: bildirishnoma, kanal,
+to'liq ekran, batareya + brend ko'rsatmasi; iOS: bildirishnoma, ovoz, bloklangan ekran, Time Sensitive, fonda yangilash, quvvat tejash).
+Majburlash yo'q: "Keyinroq" bor, Home'dagi banner eslatib turadi.
+`tools/ios-socket-check` — qo'lda yozilgan iOS Socket.IO mijozi protokolini haqiqiy `socket.io` bilan sinaydi (13/13).
+
 ## Tuzatish
 | Qism | O'zgarish | Joy |
 |---|---|---|

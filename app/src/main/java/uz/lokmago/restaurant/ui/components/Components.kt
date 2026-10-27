@@ -61,27 +61,35 @@ fun StatusChip(status: OrderStatus, modifier: Modifier = Modifier) =
         modifier = modifier.clip(RoundedCornerShape(50)).background(statusPillBg(status)).padding(horizontal = 14.dp, vertical = 6.dp),
     )
 
+/**
+ * ONLINE = server socket joined · CONNECTING = internet is there, socket (re)connecting · OFFLINE = no internet.
+ * Showing "Internet yo'q" while only the socket reconnects (e.g. right after the app was frozen in the background) was the bug.
+ */
+enum class Conn { ONLINE, CONNECTING, OFFLINE }
+private fun Conn.color() = when (this) { Conn.ONLINE -> Lg.GreenText; Conn.CONNECTING -> Lg.Orange; Conn.OFFLINE -> Lg.Red }
+private fun Conn.title() = when (this) { Conn.ONLINE -> "Online"; Conn.CONNECTING -> "Ulanmoqda…"; Conn.OFFLINE -> "Offline" }
+
 /** "● Online ⌄" exactly as in the mockup header (text, not a filled pill). */
 @Composable
-fun ConnectionPill(online: Boolean) {
-    val c = if (online) Lg.GreenText else Lg.Red
+fun ConnectionPill(state: Conn) {
+    val c = state.color()
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(c))
-        Text(if (online) "Online" else "Offline", color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(state.title(), color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         LgIcon(R.drawable.ic_chevron_down, Lg.TextSecondary, 16.dp)
     }
 }
 
 /** Small "● Online" chip used inside the restaurant card. */
 @Composable
-fun OnlineChip(online: Boolean) {
-    val c = if (online) Lg.GreenText else Lg.Red
+fun OnlineChip(state: Conn) {
+    val c = state.color()
     Row(
         Modifier.clip(RoundedCornerShape(10.dp)).background(c.copy(alpha = 0.14f)).padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(c))
-        Text(if (online) "Online" else "Offline", color = c, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Text(state.title(), color = c, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

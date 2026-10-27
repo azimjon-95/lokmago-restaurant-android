@@ -11,7 +11,10 @@ import uz.lokmago.restaurant.alert.AlertController
 import uz.lokmago.restaurant.data.local.SessionStore
 import uz.lokmago.restaurant.data.local.SettingsStore
 import uz.lokmago.restaurant.data.repo.AuthRepository
+import uz.lokmago.restaurant.alert.AlertReadiness
+import uz.lokmago.restaurant.alert.ReadinessItem
 import uz.lokmago.restaurant.data.repo.MenuStore
+import uz.lokmago.restaurant.ui.components.Conn
 import uz.lokmago.restaurant.data.remote.dto.VersionDto
 import uz.lokmago.restaurant.realtime.*
 
@@ -19,7 +22,8 @@ import uz.lokmago.restaurant.realtime.*
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val coordinator: OrderCoordinator,
-    sessionStore: SessionStore,
+    private val sessionStore: SessionStore,
+    private val readiness: AlertReadiness,
     net: NetworkMonitor,
     socket: SocketManager,
     private val alert: AlertController,
@@ -33,8 +37,18 @@ class AppViewModel @Inject constructor(
     val stoppedCount = menu.stoppedCount
     val queue = coordinator.queue.state
     val silenced = alert.silenced
-    val online: StateFlow<Boolean> = combine(net.online, socket.connected) { n, s -> n && s }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    /** Real INTERNET only (accepting an order is a REST call: it needs internet, not the socket). */
+    val online: StateFlow<Boolean> = net.online
+    /** ONLINE / CONNECTING / OFFLINE for the header label and the banner. */
+    val connection: StateFlow<Conn> = combine(net.online, socket.connected) { n, s -> if (!n) Conn.OFFLINE else if (s) Conn.ONLINE else Conn.CONNECTING }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Conn.CONNECTING)
+
+    // ---- permissions ----
+    val readinessItems = MutableStateFlow<List<ReadinessItem>>(emptyList())
+    val showPermissions = MutableStateFlow(false)
+    val onboarded: Boolean get() = sessionStore.permissionsOnboarded
+    fun refreshReadiness() { readinessItems.value = readiness.check() }
+    fun permissionsFinished() { sessionStore.permissionsOnboarded = true; showPermissions.value = false; refreshReadiness() }
 
     private val hidden = MutableStateFlow(false)
     val alertVisible: StateFlow<Boolean> = combine(session, queue, hidden) { s, q, h -> s != null && !q.isEmpty && !h }

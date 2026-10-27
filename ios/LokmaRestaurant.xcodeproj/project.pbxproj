@@ -37,6 +37,8 @@
 		A20000000000000000000306 /* DishFormScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000306 /* DishFormScreen.swift */; };
 		A20000000000000000000307 /* StopListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000307 /* StopListScreen.swift */; };
 		A20000000000000000000308 /* ReviewsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000308 /* ReviewsScreen.swift */; };
+		A20000000000000000000401 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000401 /* NetworkMonitor.swift */; };
+		A20000000000000000000402 /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000402 /* PermissionsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +76,8 @@
 		B20000000000000000000306 /* DishFormScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishFormScreen.swift; sourceTree = "<group>"; };
 		B20000000000000000000307 /* StopListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopListScreen.swift; sourceTree = "<group>"; };
 		B20000000000000000000308 /* ReviewsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsScreen.swift; sourceTree = "<group>"; };
+		B20000000000000000000401 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		B20000000000000000000402 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +127,8 @@
 				B20000000000000000000114 /* DesignTokens.swift */,
 				B20000000000000000000201 /* order_alert.wav */,
 				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
+				B20000000000000000000401 /* NetworkMonitor.swift */,
+				B20000000000000000000402 /* PermissionsView.swift */,
 				B20000000000000000000301 /* CloudinaryUploader.swift */,
 				B20000000000000000000302 /* MenuStore.swift */,
 				B20000000000000000000303 /* ImageViews.swift */,
@@ -232,6 +238,8 @@
 				A20000000000000000000112 /* AlertCenter.swift in Sources */,
 				A20000000000000000000113 /* AppDelegate.swift in Sources */,
 				A20000000000000000000114 /* DesignTokens.swift in Sources */,
+				A20000000000000000000401 /* NetworkMonitor.swift in Sources */,
+				A20000000000000000000402 /* PermissionsView.swift in Sources */,
 				A20000000000000000000301 /* CloudinaryUploader.swift in Sources */,
 				A20000000000000000000302 /* MenuStore.swift in Sources */,
 				A20000000000000000000303 /* ImageViews.swift in Sources */,

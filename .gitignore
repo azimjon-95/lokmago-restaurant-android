@@ -27,3 +27,6 @@ ios/build/
 ios/LokmaRestaurant.xcodeproj/xcuserdata/
 *.xcuserstate
 ios/Secrets.xcconfig
+
+# dev tools
+tools/ios-socket-check/node_modules/

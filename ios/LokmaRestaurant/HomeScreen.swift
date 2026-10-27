@@ -15,11 +15,20 @@ struct HomeScreen: View {
                 HStack {
                     BrandHeader()
                     Spacer()
-                    ConnectionLabel(online: model.online)
+                    ConnectionLabel(state: model.connection)
                     BellButton(count: model.queue.count, action: showOrders).padding(.leading, 6)
                 }
                 restaurantCard
-                if !model.online { banner(icon: "ic_wifi_off", text: "Internet yo'q. Ulanish tiklanganda buyurtmalar avtomatik yangilanadi.", color: Dt.red) }
+                // Three different situations, three different messages: no internet / internet but server not joined yet / permissions
+                if model.connection == .offline { banner(icon: "ic_wifi_off", text: "Internet yo'q. Ulanish tiklanganda buyurtmalar avtomatik yangilanadi.", color: Dt.red) }
+                else if model.connection == .connecting && model.showConnecting {
+                    banner(icon: "ic_refresh", text: "Serverga ulanmoqda… Ulangach buyurtmalar darhol ko'rsatiladi.", color: Dt.orange)
+                }
+                if !model.notificationsAllowed {
+                    Button { model.showPermissions = true } label: {
+                        banner(icon: "ic_warning", text: "Bildirishnoma o'chiq — yangi buyurtmani o'tkazib yuborishingiz mumkin. Sozlash uchun bosing.", color: Dt.orange)
+                    }.buttonStyle(.plain)
+                }
 
                 if !model.queue.isEmpty {
                     HStack {
@@ -52,7 +61,7 @@ struct HomeScreen: View {
                 .background(Dt.cardHigh, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 8) {
                 Text(model.restaurant?.name ?? "").font(.system(size: 20, weight: .bold))
-                OnlineChip(online: model.online)
+                OnlineChip(state: model.connection)
             }
             Spacer()
             LgIcon(name: "ic_chevron_right", color: Dt.textSecondary, size: 20)

@@ -63,12 +63,14 @@ class HomeViewModel @Inject constructor(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    queue: OrderQueue.State, online: Boolean, notificationsOn: Boolean,
+    queue: OrderQueue.State, connection: Conn, notificationsOn: Boolean,
     onOpenOrder: (String) -> Unit, onOpenAll: () -> Unit, onFixNotifications: () -> Unit, onBell: () -> Unit,
     vm: HomeViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val session by vm.restaurant.collectAsStateWithLifecycle()
+    // Flicker guard: the header label changes at once, the banner only if "connecting" lasts
+    val connecting by produceState(false, connection) { value = false; if (connection == Conn.CONNECTING) { kotlinx.coroutines.delay(2_500); value = true } }
 
     PullToRefreshBox(isRefreshing = ui.refreshing, onRefresh = vm::refresh, modifier = Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Dt.spaceScreen), verticalArrangement = Arrangement.spacedBy(Dt.spaceGap)) {
@@ -84,7 +86,7 @@ fun HomeScreen(
                         }
                         Text("Restoran", color = Lg.Muted, fontSize = 13.sp)
                     }
-                    ConnectionPill(online)
+                    ConnectionPill(connection)
                     Spacer(Modifier.width(12.dp))
                     BellButton(queue.size, onBell)
                 }
@@ -98,13 +100,15 @@ fun HomeScreen(
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(session?.restaurantName.orEmpty(), color = Lg.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        OnlineChip(online)
+                        OnlineChip(connection)
                     }
                     LgIcon(R.drawable.ic_chevron_right, Lg.TextSecondary, 20.dp)
                 }
             }
-            if (!online) item { Banner(R.drawable.ic_wifi_off, "Internet yo'q. Ulanish tiklanganda buyurtmalar avtomatik yangilanadi.", Lg.Red) }
-            if (!notificationsOn) item { Banner(R.drawable.ic_warning, "Bildirishnoma o'chirilgan — yangi buyurtmani o'tkazib yuborishingiz mumkin. Yoqish uchun bosing.", Lg.Orange, onFixNotifications) }
+            // Three different situations, three different messages: no internet / internet but server not joined yet / permissions
+            if (connection == Conn.OFFLINE) item { Banner(R.drawable.ic_wifi_off, "Internet yo'q. Ulanish tiklanganda buyurtmalar avtomatik yangilanadi.", Lg.Red) }
+            else if (connecting) item { Banner(R.drawable.ic_refresh, "Serverga ulanmoqda… Ulangach buyurtmalar darhol ko'rsatiladi.", Lg.Orange) }
+            if (!notificationsOn) item { Banner(R.drawable.ic_warning, "Ogohlantirish to'liq sozlanmagan — yangi buyurtmani o'tkazib yuborishingiz mumkin. Sozlash uchun bosing.", Lg.Orange, onFixNotifications) }
 
             // ---- new orders waiting (queue order). Appears only while there is something to accept ----
             if (!queue.isEmpty) {

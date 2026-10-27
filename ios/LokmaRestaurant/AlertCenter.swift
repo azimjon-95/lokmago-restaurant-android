@@ -47,6 +47,8 @@ final class AlertCenter {
     private func stopHaptics() { hapticTimer?.invalidate(); hapticTimer = nil }
 
     // ---- permissions ---------------------------------------------------------------------------------
+    func authorizationStatus() async -> UNAuthorizationStatus { await UNUserNotificationCenter.current().notificationSettings().authorizationStatus }
+
     @discardableResult
     func requestAuthorization() async -> Bool {
         let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
@@ -85,6 +87,8 @@ final class AlertCenter {
             ReadinessRow(id: "sound", title: "Bildirishnoma ovozi", hint: "Buyurtma ovozi chalinishi uchun «Tovushlar» yoqilgan bo'lsin", ok: s.soundSetting == .enabled),
             ReadinessRow(id: "lock", title: "Bloklangan ekranda ko'rsatish", hint: "Telefon bloklangan paytda xabar ekranda chiqishi uchun", ok: s.lockScreenSetting == .enabled),
             ReadinessRow(id: "time", title: "Muhim bildirishnomalar", hint: "«Time Sensitive» yoqilsa, Fokus / Bezovta qilmang rejimida ham o'tadi", ok: s.timeSensitiveSetting == .enabled),
+            ReadinessRow(id: "bg", title: "Fonda yangilash", hint: "Sozlamalar → Umumiy → Fonda yangilash: ilova fonda ham buyurtmalarni tekshira olishi uchun", ok: UIApplication.shared.backgroundRefreshStatus == .available),
+            ReadinessRow(id: "lowpower", title: "Quvvat tejash rejimi o'chiq", hint: "Yoqilgan bo'lsa iOS fondagi ishni cheklaydi — buyurtma kechikishi mumkin", ok: !ProcessInfo.processInfo.isLowPowerModeEnabled),
         ]
     }
 }

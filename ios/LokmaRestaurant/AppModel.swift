@@ -17,6 +17,8 @@ enum Prefs {
     let api: APIClient
     let menu: MenuStore
     private let socket = RealtimeSocket()
+    private let network = NetworkMonitor()
+    private var connectingTask: Task<Void, Never>?
     @Published var token: String? { didSet { api.token = token; KeychainStore.save(token) } }
     @Published var restaurant: Restaurant? {
         didSet {
@@ -31,7 +33,15 @@ enum Prefs {
     @Published var stats: TodayStats?
     @Published var isLoading = false
     @Published var error: String?
-    @Published var online = false          // socket joined
+    /// Real internet (Wi-Fi / LTE), from NWPathMonitor — NOT the same as "server socket joined".
+    @Published private(set) var networkOnline = true
+    @Published private(set) var socketJoined = false       // Socket.IO namespace joined
+    @Published private(set) var showConnecting = false     // "Serverga ulanmoqda" banner, only if it takes longer than ~2.5 s
+    @Published var showPermissions = false                 // first-run permission sheet (also reachable from Profil / Home banner)
+    @Published private(set) var notificationsAllowed = true
+    var hasInternet: Bool { networkOnline }
+    /// Online = server socket joined · Ulanmoqda = internet is there, socket still (re)connecting · Offline = no internet.
+    var connection: ConnectionState { !networkOnline ? .offline : (socketJoined ? .online : .connecting) }
     @Published var silenced = false        // "Signalni to'xtatish": mutes only, never accepts
     @Published var minimized = false       // alert screen closed for now
     @Published var busy = false
@@ -47,8 +57,10 @@ enum Prefs {
         api.token = token
         restaurant = UserDefaults.standard.data(forKey: "restaurant-profile").flatMap { try? JSONDecoder().decode(Restaurant.self, from: $0) }
         AppModel.shared = self
-        socket.onConnected = { [weak self] in Task { @MainActor in self?.online = true; await self?.refresh(); await self?.menu.refresh() } }
-        socket.onDisconnected = { [weak self] in Task { @MainActor in self?.online = false } }
+        socket.onConnected = { [weak self] in Task { @MainActor in self?.setSocket(true); await self?.refresh(); await self?.menu.refresh() } }
+        socket.onDisconnected = { [weak self] in Task { @MainActor in self?.setSocket(false) } }
+        network.onChange = { [weak self] online in Task { @MainActor in self?.networkChanged(online) } }
+        network.start()
         socket.onEvent = { [weak self] name, payload in
             let stopped = payload?["stoppedCount"] as? Int
             Task { @MainActor in
@@ -67,22 +79,71 @@ enum Prefs {
     func start() async {
         guard isSignedIn else { return }
         startRealtime()
+        if !UserDefaults.standard.bool(forKey: "permissions-onboarded") { showPermissions = true }
         await refresh()
         await menu.refresh()
+        await refreshPermissionState()
     }
 
     private func startRealtime() {
         guard let token else { return }
         socket.connect(token: token)
         startPolling()
-        Task { await AlertCenter.shared.requestAuthorization() }
+    }
+
+    /// The app just came back to the foreground. iOS FROZE it while it was in the background: the socket is dead and
+    /// keep-alive HTTP connections are stale, so reconnect NOW (not after a backoff) and open fresh connections.
+    private func wake() async {
+        guard isSignedIn else { return }
+        AlertCenter.shared.cancelBackgroundAlerts()
+        socket.reconnectNow()
+        startPolling()
+        await api.flushConnections()
+        await refresh()
+        await menu.refresh()
+        await refreshPermissionState()
+    }
+
+    private func setSocket(_ joined: Bool) { socketJoined = joined; connectionChanged() }
+
+    private func networkChanged(_ online: Bool) {
+        networkOnline = online
+        if online, isSignedIn {
+            socket.reconnectNow()                       // the old socket died with the old network
+            Task { await api.flushConnections(); await refresh(); await menu.reconcile() }
+        } else if !online {
+            socketJoined = false
+        }
+        connectionChanged()
+    }
+
+    /// Flicker guard: "connecting" is shown as a banner only if it lasts, the small header label changes at once.
+    private func connectionChanged() {
+        connectingTask?.cancel(); showConnecting = false
+        guard connection == .connecting else { return }
+        connectingTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard !Task.isCancelled, let self, self.connection == .connecting else { return }
+            self.showConnecting = true
+        }
+    }
+
+    // ---- permissions ---------------------------------------------------------------------------------
+    func refreshPermissionState() async {
+        let rows = await AlertCenter.shared.readiness()
+        notificationsAllowed = rows.first { $0.id == "auth" }?.ok ?? true
+    }
+
+    func permissionsFinished() {
+        UserDefaults.standard.set(true, forKey: "permissions-onboarded")
+        showPermissions = false
+        Task { await refreshPermissionState() }
     }
 
     func scenePhaseChanged(_ phase: ScenePhase) {
         switch phase {
         case .active:
-            AlertCenter.shared.cancelBackgroundAlerts()
-            Task { await start() }
+            Task { await wake() }
         case .background:
             // The app is about to be suspended: if orders are still unaccepted, let the system keep nudging.
             if !queue.isEmpty && !silenced { AlertCenter.shared.scheduleBackgroundAlerts(for: queue) }
@@ -100,8 +161,10 @@ enum Prefs {
             restaurant = result.restaurant; token = result.token
             UserDefaults.standard.set(Date(), forKey: refreshedKey)
             startRealtime()
+            showPermissions = !UserDefaults.standard.bool(forKey: "permissions-onboarded")
             await refresh()
             registerStoredPushToken()
+            await refreshPermissionState()
         } catch { self.error = error.localizedDescription }
     }
 
@@ -114,11 +177,13 @@ enum Prefs {
     func signOut() {
         pollingTask?.cancel(); socket.disconnect(); AlertCenter.shared.stopRinging(); AlertCenter.shared.cancelBackgroundAlerts()
         menu.reset()
-        token = nil; restaurant = nil; orders = []; stats = nil; online = false; knownPending = []; silenced = false; minimized = false
+        token = nil; restaurant = nil; orders = []; stats = nil; socketJoined = false; knownPending = []; silenced = false; minimized = false; showConnecting = false
     }
 
     private func handle(_ error: Error) {
         if let api = error as? APIError, api.isUnauthorized { signOut(); self.error = "Sessiya tugadi. Qaytadan kiring."; return }
+        // A broken connection is not an "Xatolik" pop-up: the connection label/banner already says so and everything retries by itself.
+        if error is URLError { return }
         self.error = error.localizedDescription
     }
 
@@ -221,3 +286,6 @@ enum Prefs {
         }
     }
 }
+
+/// Online = server socket joined · connecting = internet is there, socket (re)connecting · offline = no internet.
+enum ConnectionState { case online, connecting, offline }

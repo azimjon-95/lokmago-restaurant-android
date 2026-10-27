@@ -56,8 +56,8 @@ struct AlertScreen: View {
 
             LgIcon(name: model.silenced ? "ic_volume_off" : "ic_volume", color: Dt.red, size: 30)
                 .frame(width: 64, height: 64).background(Dt.red.opacity(0.22), in: Circle())
-            Text(model.online ? (model.silenced ? "Signal o'chirilgan. Buyurtma hali qabul qilinmagan." : "Buyurtmani qabul qilmaguncha signal davom etadi…") : "Internet yo'q — qabul qilish uchun ulanish kerak")
-                .font(.system(size: 13)).foregroundStyle(model.online ? Dt.textMuted : Dt.orange).multilineTextAlignment(.center).padding(.top, 10)
+            Text(model.hasInternet ? (model.silenced ? "Signal o'chirilgan. Buyurtma hali qabul qilinmagan." : "Buyurtmani qabul qilmaguncha signal davom etadi…") : "Internet yo'q — qabul qilish uchun ulanish kerak")
+                .font(.system(size: 13)).foregroundStyle(model.hasInternet ? Dt.textMuted : Dt.orange).multilineTextAlignment(.center).padding(.top, 10)
 
             HStack(alignment: .bottom, spacing: 14) {
                 Button { model.silence() } label: {
@@ -79,9 +79,9 @@ struct AlertScreen: View {
                         }
                     }
                     .frame(maxWidth: .infinity).frame(height: 104)
-                    .background(LinearGradient(colors: [Dt.green, Dt.greenEnd], startPoint: .top, endPoint: .bottom).opacity(model.online && !model.busy ? 1 : 0.4),
+                    .background(LinearGradient(colors: [Dt.green, Dt.greenEnd], startPoint: .top, endPoint: .bottom).opacity(model.hasInternet && !model.busy ? 1 : 0.4),
                                 in: RoundedRectangle(cornerRadius: 28))
-                }.buttonStyle(.plain).disabled(!model.online || model.busy)
+                }.buttonStyle(.plain).disabled(!model.hasInternet || model.busy)
             }.padding(.top, 14)
 
             Button("Tarkibini ko'rish") { openOrder(head.id) }

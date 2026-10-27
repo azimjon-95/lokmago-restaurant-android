@@ -18,14 +18,35 @@ final class APIClient {
     var token: String?
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
-        config.waitsForConnectivity = true
+        config.waitsForConnectivity = true            // a request made while the radio wakes up WAITS instead of failing at once
         config.timeoutIntervalForRequest = 20
+        config.timeoutIntervalForResource = 45
         return URLSession(configuration: config)
     }()
+
+    /// Errors that say "the connection broke", not "the server said no". After iOS froze the app the first request often
+    /// reuses a keep-alive connection that is already dead (-1005 networkConnectionLost; the "tcp_input … R" lines in the log).
+    private static let transient: Set<URLError.Code> = [.networkConnectionLost, .timedOut, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed, .secureConnectionFailed, .notConnectedToInternet]
+
+    /// Drops idle keep-alive connections so the next request opens a fresh one. Does NOT cancel requests that are running.
+    func flushConnections() async { await withCheckedContinuation { c in session.flush { c.resume() } } }
+
+    /// GET (and calls marked idempotent) are retried twice on a broken connection; everything else fails at once, never twice.
+    private func send(_ request: URLRequest, retry: Bool) async throws -> (Data, URLResponse) {
+        var attempt = 0
+        while true {
+            do { return try await session.data(for: request) }
+            catch let error as URLError where retry && attempt < 2 && Self.transient.contains(error.code) {
+                attempt += 1
+                if error.code == .networkConnectionLost { await flushConnections() }
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 400_000_000)
+            }
+        }
+    }
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
 
-    func request<T: Decodable>(_ path: String, method: String = "GET", body: Encodable? = nil, bearer: String? = nil) async throws -> T {
+    func request<T: Decodable>(_ path: String, method: String = "GET", body: Encodable? = nil, bearer: String? = nil, idempotent: Bool = false) async throws -> T {
         guard let endpoint = URL(string: path, relativeTo: AppConfig.apiBaseURL)?.absoluteURL else {
             throw APIError.http(0, "API manzili noto'g'ri")
         }
@@ -37,7 +58,7 @@ final class APIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try encoder.encode(AnyEncodable(body))
         }
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await send(request, retry: method == "GET" || idempotent)
         guard let http = response as? HTTPURLResponse else { throw APIError.http(0, "Server javobi noto'g'ri") }
         guard (200..<300).contains(http.statusCode) else {
             let payload = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
@@ -48,14 +69,14 @@ final class APIClient {
 
     /// Same as `request`, for endpoints whose reply body we do not need (it may be empty).
     @discardableResult
-    func requestRaw(_ path: String, method: String, body: Encodable? = nil, json: [String: Any]? = nil) async throws -> Data {
+    func requestRaw(_ path: String, method: String, body: Encodable? = nil, json: [String: Any]? = nil, idempotent: Bool = false) async throws -> Data {
         guard let endpoint = URL(string: path, relativeTo: AppConfig.apiBaseURL)?.absoluteURL else { throw APIError.http(0, "API manzili noto'g'ri") }
         var request = URLRequest(url: endpoint)
         request.httpMethod = method
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body { request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try encoder.encode(AnyEncodable(body)) }
         if let json { request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try JSONSerialization.data(withJSONObject: json) }
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await send(request, retry: method == "GET" || idempotent)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             // The server explains validation errors in its own words ("Narxni kiriting") — show them.
             let message = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["error"] as? String ?? ""
@@ -96,7 +117,7 @@ final class APIClient {
     }
     /// stop = true → taom STOP-listga tushadi (isAvailable = false).
     func stopDish(id: String, stop: Bool) async throws -> Dish {
-        let data = try await requestRaw("panel/dishes/\(id)/stop", method: "PATCH", json: ["stop": stop])
+        let data = try await requestRaw("panel/dishes/\(id)/stop", method: "PATCH", json: ["stop": stop], idempotent: true)
         return try JSONDecoder().decode(Dish.self, from: data)
     }
     func deleteDish(id: String) async throws { _ = try await requestRaw("panel/dishes/\(id)", method: "DELETE") }
@@ -107,14 +128,14 @@ final class APIClient {
     /// Chiqishda: bu iPhone endi shu restoranning buyurtmalarini olmaydi.
     func unregisterDevice(token: String) async throws { _ = try await requestRaw("panel/devices", method: "DELETE", json: ["token": token]) }
     func registerDevice(token: String) async throws {
-        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"))
+        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"), idempotent: true)
     }
     func setStatus(id: String, status: String) async throws -> RestaurantOrder {
-        try await request("panel/orders/\(id)/status", method: "PATCH", body: StatusRequest(status: status))
+        try await request("panel/orders/\(id)/status", method: "PATCH", body: StatusRequest(status: status), idempotent: true)   // 2nd accept → changed:false
     }
     /// Yetkazib berish buyurtmasini restoran yakunlaydi (server vaqt shartini tekshiradi).
     func confirmDelivered(id: String) async throws -> RestaurantOrder {
-        try await request("panel/orders/\(id)/confirm-delivered", method: "POST")
+        try await request("panel/orders/\(id)/confirm-delivered", method: "POST", idempotent: true)   // confirmOrderDelivered is idempotent
     }
 }
 private struct AnyEncodable: Encodable {

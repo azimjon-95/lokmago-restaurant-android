@@ -21,24 +21,29 @@ struct StatusPill: View {
 }
 
 /// "● Online ⌄" (header) — text, not a filled pill.
+extension ConnectionState {
+    var color: Color { self == .online ? Dt.greenText : (self == .connecting ? Dt.orange : Dt.red) }
+    var title: String { self == .online ? "Online" : (self == .connecting ? "Ulanmoqda…" : "Offline") }
+}
+
 struct ConnectionLabel: View {
-    let online: Bool
+    let state: ConnectionState
     var body: some View {
         HStack(spacing: 6) {
-            Circle().fill(online ? Dt.greenText : Dt.red).frame(width: 8, height: 8)
-            Text(online ? "Online" : "Offline").font(.system(size: 14, weight: .semibold)).foregroundStyle(online ? Dt.greenText : Dt.red)
+            Circle().fill(state.color).frame(width: 8, height: 8)
+            Text(state.title).font(.system(size: 14, weight: .semibold)).foregroundStyle(state.color)
             LgIcon(name: "ic_chevron_down", color: Dt.textSecondary, size: 16)
         }
     }
 }
 
 struct OnlineChip: View {
-    let online: Bool
+    let state: ConnectionState
     var body: some View {
-        let c = online ? Dt.greenText : Dt.red
+        let c = state.color
         HStack(spacing: 6) {
             Circle().fill(c).frame(width: 8, height: 8)
-            Text(online ? "Online" : "Offline").font(.system(size: 12, weight: .semibold)).foregroundStyle(c)
+            Text(state.title).font(.system(size: 12, weight: .semibold)).foregroundStyle(c)
         }
         .padding(.horizontal, 10).padding(.vertical, 5).background(c.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
     }

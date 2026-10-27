@@ -12,7 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class ReadinessItem(val title: String, val hint: String, val ok: Boolean, val fix: Intent?)
+data class ReadinessItem(val id: String, val title: String, val hint: String, val ok: Boolean, val fix: Intent?)
 
 /**
  * "Will a new order really wake this phone?" — the four things that decide it, each with a one-tap fix.
@@ -27,26 +27,26 @@ class AlertReadiness @Inject constructor(@ApplicationContext private val ctx: Co
         val list = mutableListOf<ReadinessItem>()
 
         list += ReadinessItem(
-            "Bildirishnomalar", "Yangi buyurtma xabari kelishi uchun yoqilgan bo'lishi shart",
+            "notifications", "Bildirishnomalar", "Yangi buyurtma xabari kelishi uchun yoqilgan bo'lishi shart",
             NotificationManagerCompat.from(ctx).areNotificationsEnabled(),
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg),
         )
 
         val importance = nm.getNotificationChannel(Notifier.CH_ORDERS)?.importance ?: NotificationManager.IMPORTANCE_HIGH
         list += ReadinessItem(
-            "Buyurtma kanali ovozi", "«Yangi buyurtma» kanali ovozli va yuqori muhimlikda bo'lsin",
+            "channel", "Buyurtma kanali ovozi", "«Yangi buyurtma» kanali ovozli va yuqori muhimlikda bo'lsin",
             importance >= NotificationManager.IMPORTANCE_HIGH,
             Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg).putExtra(Settings.EXTRA_CHANNEL_ID, Notifier.CH_ORDERS),
         )
 
         if (Build.VERSION.SDK_INT >= 34) list += ReadinessItem(
-            "Bloklangan ekranda to'liq ekran", "Telefon bloklangan paytda buyurtma ekranni o'zi yoqishi uchun",
+            "fullscreen", "Bloklangan ekranda to'liq ekran", "Telefon bloklangan paytda buyurtma ekranni o'zi yoqishi uchun",
             nm.canUseFullScreenIntent(),
             Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$pkg")),
         )
 
         list += ReadinessItem(
-            "Batareya cheklovi o'chirilgan", "Telefon uxlaganda tizim ilovani to'xtatib qo'ymasligi uchun «Cheklovsiz» qiling",
+            "battery", "Batareya cheklovi o'chirilgan", "Telefon uxlaganda tizim ilovani to'xtatib qo'ymasligi uchun «Cheklovsiz» qiling",
             ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(pkg),
             Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
         )

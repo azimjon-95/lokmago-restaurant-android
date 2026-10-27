@@ -28,13 +28,12 @@ class MainActivity : ComponentActivity() {
     // Cancelled/failed Play flows are re-evaluated in onResume(); a mandatory update keeps the gate up.
     private val updateLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { }
     private val updater by lazy { UpdateManager(this, updateLauncher) }
-    private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handle(intent)
-        if (Build.VERSION.SDK_INT >= 33) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // POST_NOTIFICATIONS is requested by the permission walk-through (ui/permissions), with an explanation, not silently here.
         updater.register()
         setContent {
             LokmaGoTheme {

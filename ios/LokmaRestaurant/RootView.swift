@@ -44,6 +44,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.queue.isEmpty)
+        .sheet(isPresented: $model.showPermissions, onDismiss: { model.permissionsFinished() }) { PermissionsView() }
         .preferredColorScheme(.dark)
         .tint(Dt.green)
         .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(phase) }
