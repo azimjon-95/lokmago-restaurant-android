@@ -30,6 +30,24 @@ to'liq ekran, batareya + brend ko'rsatmasi; iOS: bildirishnoma, ovoz, bloklangan
 Majburlash yo'q: "Keyinroq" bor, Home'dagi banner eslatib turadi.
 `tools/ios-socket-check` — qo'lda yozilgan iOS Socket.IO mijozi protokolini haqiqiy `socket.io` bilan sinaydi (13/13).
 
+## "Baribir uxlab qolyapti" — nima uchun va nima qilish kerak
+**Haqiqat:** iPhone ilovani fonda DOIM to'xtatadi (suspend). Hech bir ilova «uxlamaslikka» majburlanmaydi; buning yo'llari
+(ovozsiz audio, doimiy lokatsiya, VoIP) App Store'da rad etiladi va batareyani bir kunda bo'shatadi. Yopiq/qulflangan iPhone'ni
+uyg'otishning **yagona haqiqiy yo'li — serverdan APNs push**. Android'da esa doimiy xizmat + FCM ishlaydi.
+
+Push zanjiri 5 halqadan iborat; bittasi uzilsa jimgina ishlamaydi. Endi ilovaning o'zi tekshiradi:
+**Profil → Ogohlantirish tayyorligi → «Push tekshiruvi»** (Android va iOS):
+1. bildirishnoma ruxsati → 2. telefon push tokeni (iOS: APNs, Android: FCM) → 3. token serverda ro'yxatda →
+4. serverda APNs/FCM sozlangan → 5. **«Test push yuborish»** (server provayderga haqiqiy xabar yuboradi, javobi aynan ko'rsatiladi:
+`BadDeviceToken` → sandbox/production mos emas, `DeviceTokenNotForTopic` → Bundle ID, `InvalidProviderToken` → kalit/Team ID/Key ID ...).
+Test bosilgach ilovani yoping va telefonni bloklang: 5-10 soniyada «Push ishlayapti ✓» kelishi kerak. Kelsa — yangi buyurtma ham keladi.
+
+Bu bosqichda topilgan yana bir xato: oldingi build iOS'da `registerForRemoteNotifications()` ni har ishga tushirishda chaqirmay qo'ygan edi
+(ruxsat allaqachon berilgan foydalanuvchilarda token serverga umuman bormasdi) — tuzatildi (`AlertCenter.registerForPushIfAllowed`).
+
+**Kassa rejimi** (Sozlamalar → «Ekran o'chmasin»): ilova ochiq paytda ekran o'chmaydi — stolda zaryadda turadigan telefon uchun eng
+ishonchli yo'l (ilova doim jonli, soket doim ulangan, signal darhol). iPhone'ni boshqa ilova ustiga chiqmaslik uchun «Guided Access» bilan qulflash mumkin.
+
 ## Tuzatish
 | Qism | O'zgarish | Joy |
 |---|---|---|

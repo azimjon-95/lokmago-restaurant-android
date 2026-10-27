@@ -52,6 +52,7 @@ class SettingsViewModel @Inject constructor(private val store: SettingsStore, se
     fun sound(v: Boolean) = viewModelScope.launch { store.setSound(v) }
     fun vibration(v: Boolean) = viewModelScope.launch { store.setVibration(v) }
     fun notifications(v: Boolean) = viewModelScope.launch { store.setNotifications(v) }
+    fun keepAwake(v: Boolean) = viewModelScope.launch { store.setKeepAwake(v) }
     fun cycleVolume(cur: Int) = viewModelScope.launch { store.setVolume((cur + 1) % VOLUME.size) }
     fun cycleRefresh(cur: Int) = viewModelScope.launch { store.setAutoRefresh(REFRESH[(REFRESH.indexOf(cur).coerceAtLeast(0) + 1) % REFRESH.size]) }
 }
@@ -62,6 +63,8 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
     val session by vm.session.collectAsStateWithLifecycle()
     val checks by vm.checks.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
+    var showPush by remember { mutableStateOf(false) }
+    if (showPush) PushCheckDialog(onDismiss = { showPush = false })
     // The user flips switches in system settings and comes back: re-check on every resume.
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
@@ -81,6 +84,7 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
             Toggle(R.drawable.ic_volume, "Buyurtma ovozi", cfg.sound, vm::sound)
             Toggle(R.drawable.ic_vibrate, "Vibratsiya", cfg.vibration, vm::vibration)
             Toggle(R.drawable.ic_bell, "Bildirishnoma", cfg.notifications, vm::notifications)
+            Toggle(R.drawable.ic_clock, "Ekran o'chmasin (kassa rejimi)", cfg.keepAwake, vm::keepAwake)
             Row2(R.drawable.ic_refresh, "Avto yangilash", if (cfg.autoRefreshSec == 0) "O'chiq" else "${cfg.autoRefreshSec} soniya") { vm.cycleRefresh(cfg.autoRefreshSec) }
             Row2(R.drawable.ic_volume, "Ovozni sozlash", VOLUME[cfg.volume.coerceIn(0, 2)], last = true) { vm.cycleVolume(cfg.volume) }
         }
@@ -88,6 +92,7 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
         // Does a new order really wake THIS phone? Each line says why it matters and fixes itself in one tap.
         val missing = checks.count { !it.ok }
         Group(if (missing == 0) "Ogohlantirish tayyorligi  ✓" else "Ogohlantirish tayyorligi  ($missing ta sozlanmagan)") {
+            Row2(R.drawable.ic_refresh, "Push tekshiruvi", "Nega xabar kelmayapti?") { showPush = true }
             checks.forEachIndexed { i, c -> Readiness(c, ctx) { if (i < checks.lastIndex) Divider() } }
         }
 

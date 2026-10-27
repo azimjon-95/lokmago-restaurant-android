@@ -31,6 +31,7 @@ class LokmaFcmService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         if (session.token == null) return                 // logged out: ignore
         val d = message.data
+        if (d["type"] == "test") { coordinator.onTestPush(d["title"], d["body"]); return }   // "Push tekshiruvi" (orderId yo'q)
         val orderId = d["orderId"] ?: return
         when (d["type"]) {
             "order_new" -> coordinator.onPush(orderId, d["title"] ?: "🔔 Yangi buyurtma", d["body"] ?: "")

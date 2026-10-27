@@ -170,6 +170,11 @@ fun OrderDto.toReview(): Review? {
 @Serializable data class StopRequest(val stop: Boolean)
 @Serializable data class OkDto(val ok: Boolean = true)
 @Serializable data class CountDto(val count: Int = 0)
+@Serializable data class PushProvidersDto(val android: Boolean = false, val ios: Boolean = false)
+@Serializable data class PushDeviceDto(val platform: String = "", val token: String = "", val lastSentAt: String? = null, val lastError: String? = null)
+@Serializable data class DevicesResponseDto(val providers: PushProvidersDto = PushProvidersDto(), val devices: List<PushDeviceDto> = emptyList())
+@Serializable data class PushTestResultDto(val platform: String = "", val token: String = "", val ok: Boolean = false, val error: String? = null)
+@Serializable data class PushTestResponseDto(val providers: PushProvidersDto = PushProvidersDto(), val registered: Int = 0, val results: List<PushTestResultDto> = emptyList())
 @Serializable data class DeviceRegisterRequest(val token: String, val platform: String = "android")
 @Serializable data class DeviceUnregisterRequest(val token: String)
 

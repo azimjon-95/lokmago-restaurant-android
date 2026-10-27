@@ -121,6 +121,8 @@ class OrderCoordinator @Inject constructor(
     }
 
     /** FCM path. Payload text is shown immediately; the real order is reloaded from the backend. */
+    fun onTestPush(title: String?, body: String?) = notifier.notifyTest(title ?: "Push ishlayapti ✓", body ?: "")
+
     fun onPush(orderId: String, title: String, body: String) {
         if (queue.contains(orderId) || !inflight.add(orderId)) return          // duplicate of socket/FCM
         alert.markUnresolved(orderId)

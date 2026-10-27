@@ -13,7 +13,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         Task { @MainActor in AppModel.shared?.registerPushToken(hex) }
     }
 
-    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) { /* no push (simulator / no entitlement): the app still works while open */ }
+    /// No push token (simulator, missing Push Notifications capability, no internet ...): the app still works while open, but the
+    /// reason is remembered so "Push tekshiruvi" can show it instead of failing silently.
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Task { @MainActor in AppModel.shared?.pushRegistrationFailed(error.localizedDescription) }
+    }
 
     /// Push while the app is open: the in-app alarm screen takes over, so no banner — just reload the orders.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {

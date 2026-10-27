@@ -83,6 +83,14 @@ class Notifier @Inject constructor(
 
     /** Delivery-completion reminder: normal (non-alarm) notification, tap opens the order,
      *  two direct actions mirror the Telegram reminder buttons in the TZ. */
+    /** "Push tekshiruvi": oddiy bildirishnoma. Ilova yopiq paytda ko'rinsa — push zanjiri to'liq ishlayapti. */
+    fun notifyTest(title: String, body: String) {
+        if (!canPost()) return
+        val n = NotificationCompat.Builder(ctx, CH_ORDERS).setSmallIcon(R.drawable.ic_bell_ring).setContentTitle(title).setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(openOrder(null)).build()
+        nm.notify(TEST_ID, n)
+    }
+
     fun notifyReminder(orderId: String, title: String, body: String) {
         if (!canPost()) return
         val n = NotificationCompat.Builder(ctx, CH_ORDERS)
@@ -156,5 +164,6 @@ class Notifier @Inject constructor(
         const val CH_LISTEN = "listener_v1"
         const val SERVICE_ID = 4242
         const val LISTENER_ID = 4243
+        const val TEST_ID = 4244
     }
 }

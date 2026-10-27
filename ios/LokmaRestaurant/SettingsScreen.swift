@@ -11,6 +11,8 @@ struct SettingsScreen: View {
     @AppStorage("notifications") private var notifications = true
     @AppStorage("volume") private var volume = 2
     @AppStorage("autoRefresh") private var autoRefresh = 10
+    @AppStorage("keepAwake") private var keepAwake = false
+    @State private var showPushCheck = false
     @State private var checks: [ReadinessRow] = []
     private let volumeNames = ["Past", "O'rta", "Baland"]
     private let refreshOptions = [0, 5, 10, 30]
@@ -29,6 +31,7 @@ struct SettingsScreen: View {
                     toggle("ic_volume", "Buyurtma ovozi", $sound)
                     toggle("ic_vibrate", "Vibratsiya", $vibration)
                     toggle("ic_bell", "Bildirishnoma", $notifications)
+                    toggle("ic_clock", "Ekran o'chmasin (kassa rejimi)", $keepAwake)
                     row("ic_refresh", "Avto yangilash", autoRefresh == 0 ? "O'chiq" : "\(autoRefresh) soniya") {
                         autoRefresh = refreshOptions[((refreshOptions.firstIndex(of: autoRefresh) ?? 0) + 1) % refreshOptions.count]
                     }
@@ -38,6 +41,7 @@ struct SettingsScreen: View {
                 // "Will a new order really wake THIS phone?" — each line says why it matters and opens the system setting.
                 let missing = checks.filter { !$0.ok }.count
                 group(missing == 0 ? "Ogohlantirish tayyorligi  ✓" : "Ogohlantirish tayyorligi  (\(missing) ta sozlanmagan)") {
+                    row("ic_refresh", "Push tekshiruvi", "Nega xabar kelmayapti?") { showPushCheck = true }
                     ForEach(checks) { c in
                         HStack(spacing: 12) {
                             LgIcon(name: c.ok ? "ic_check" : "ic_warning", color: c.ok ? Dt.greenText : Dt.orange, size: 16)
@@ -78,6 +82,8 @@ struct SettingsScreen: View {
             }
             .padding(Dt.spaceScreen)
         }
+        .sheet(isPresented: $showPushCheck) { PushCheckView() }
+        .onChange(of: keepAwake) { _, _ in model.applyKeepAwake() }
         .task { checks = await AlertCenter.shared.readiness() }
         .onChange(of: scenePhase) { _, p in if p == .active { Task { checks = await AlertCenter.shared.readiness() } } }   // back from system settings
     }

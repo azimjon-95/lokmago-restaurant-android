@@ -8,6 +8,7 @@ enum Prefs {
     static var vibration: Bool { UserDefaults.standard.object(forKey: "vibration") as? Bool ?? true }
     static var volume: Int { UserDefaults.standard.object(forKey: "volume") as? Int ?? 2 }          // 0 Past, 1 O'rta, 2 Baland
     static var autoRefresh: Int { UserDefaults.standard.object(forKey: "autoRefresh") as? Int ?? 10 } // seconds, 0 = off
+    static var keepAwake: Bool { UserDefaults.standard.bool(forKey: "keepAwake") }
     static var volumeFraction: Float { [0.4, 0.7, 1.0][min(max(volume, 0), 2)] }
 }
 
@@ -89,6 +90,8 @@ enum Prefs {
         guard let token else { return }
         socket.connect(token: token)
         startPolling()
+        Task { await AlertCenter.shared.registerForPushIfAllowed() }      // fresh APNs token on every start
+        applyKeepAwake()
     }
 
     /// The app just came back to the foreground. iOS FROZE it while it was in the background: the socket is dead and
@@ -98,6 +101,8 @@ enum Prefs {
         AlertCenter.shared.cancelBackgroundAlerts()
         socket.reconnectNow()
         startPolling()
+        Task { await AlertCenter.shared.registerForPushIfAllowed() }
+        applyKeepAwake()
         await api.flushConnections()
         await refresh()
         await menu.refresh()
@@ -267,12 +272,21 @@ enum Prefs {
     // ---- push ----------------------------------------------------------------------------------------
     func registerPushToken(_ hex: String) {
         UserDefaults.standard.set(hex, forKey: "apns-token")
+        UserDefaults.standard.removeObject(forKey: "apns-error")
         registerStoredPushToken()
     }
     private func registerStoredPushToken() {
         guard isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") else { return }
-        Task { try? await api.registerDevice(token: hex) }     // 404 until the server implements it: harmless
+        Task {
+            do { try await api.registerDevice(token: hex); UserDefaults.standard.set("ok", forKey: "apns-server") }
+            catch { UserDefaults.standard.set(error.localizedDescription, forKey: "apns-server") }   // shown by "Push tekshiruvi"
+        }
     }
+    func pushRegistrationFailed(_ reason: String) { UserDefaults.standard.set(reason, forKey: "apns-error") }
+
+    /// "Kassa rejimi": while the app is open the screen does not lock (a restaurant phone on the counter, on a charger).
+    func applyKeepAwake() { UIApplication.shared.isIdleTimerDisabled = Prefs.keepAwake }
+
     func pushArrived() { Task { await refresh() } }
 
     func startPolling() {

@@ -49,6 +49,13 @@ final class AlertCenter {
     // ---- permissions ---------------------------------------------------------------------------------
     func authorizationStatus() async -> UNAuthorizationStatus { await UNUserNotificationCenter.current().notificationSettings().authorizationStatus }
 
+    /// Apple: call this on EVERY launch (the token can change). Without it the server never gets this iPhone's push token —
+    /// last release dropped it and push silently stopped working for users who had already granted notifications.
+    func registerForPushIfAllowed() async {
+        let s = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        if s == .authorized || s == .provisional || s == .ephemeral { UIApplication.shared.registerForRemoteNotifications() }
+    }
+
     @discardableResult
     func requestAuthorization() async -> Bool {
         let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false

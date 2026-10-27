@@ -42,4 +42,9 @@ interface LokmaApi {
     // ---- Push qurilmasi (lakmago-server: /api/panel/devices) — yangi buyurtma ilova yopiq bo'lsa ham keladi ----
     @POST("panel/devices") suspend fun registerDevice(@Body body: DeviceRegisterRequest)
     @HTTP(method = "DELETE", path = "panel/devices", hasBody = true) suspend fun unregisterDevice(@Body body: DeviceUnregisterRequest)
+
+    /** Push diagnostikasi: serverda FCM/APNs sozlanganmi va bu telefon ro'yxatdami. */
+    @GET("panel/devices") suspend fun devices(): DevicesResponseDto
+    /** Test push: har telefon uchun natija va provayderning aniq xatosi (10 s da 1 marta). */
+    @POST("panel/devices/test") suspend fun testPush(): PushTestResponseDto
 }

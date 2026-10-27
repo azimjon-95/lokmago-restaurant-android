@@ -127,6 +127,10 @@ final class APIClient {
     /// Push token for background alerts. The server endpoint is described in docs/SERVER-PUSH.md; until it exists a 404 is expected and ignored.
     /// Chiqishda: bu iPhone endi shu restoranning buyurtmalarini olmaydi.
     func unregisterDevice(token: String) async throws { _ = try await requestRaw("panel/devices", method: "DELETE", json: ["token": token]) }
+    /// Push diagnostikasi: serverda APNs/FCM sozlanganmi va bu telefon ro'yxatdami.
+    func devices() async throws -> DevicesResponse { try await request("panel/devices") }
+    /// Test push: har telefon uchun natija va provayderning aniq xatosi (10 s da 1 marta).
+    func testPush() async throws -> PushTestResponse { try await request("panel/devices/test", method: "POST") }
     func registerDevice(token: String) async throws {
         _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios"), idempotent: true)
     }

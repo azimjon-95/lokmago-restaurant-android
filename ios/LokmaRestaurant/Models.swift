@@ -249,3 +249,18 @@ extension String {
 }
 
 struct CountResponse: Decodable { let count: Int }
+
+// ---- Push diagnostika: GET /api/panel/devices, POST /api/panel/devices/test ----
+struct PushProviders: Decodable { let android: Bool; let ios: Bool
+    init(from d: Decoder) throws { let c = try d.container(keyedBy: CodingKeys.self); android = (try? c.decode(Bool.self, forKey: .android)) ?? false; ios = (try? c.decode(Bool.self, forKey: .ios)) ?? false }
+    enum CodingKeys: String, CodingKey { case android, ios } }
+struct PushDevice: Decodable { let platform: String; let token: String; let lastSentAt: String?; let lastError: String?
+    init(from d: Decoder) throws { let c = try d.container(keyedBy: CodingKeys.self); platform = (try? c.decode(String.self, forKey: .platform)) ?? ""; token = (try? c.decode(String.self, forKey: .token)) ?? ""
+        lastSentAt = (try? c.decodeIfPresent(String.self, forKey: .lastSentAt)) ?? nil; lastError = (try? c.decodeIfPresent(String.self, forKey: .lastError)) ?? nil }
+    enum CodingKeys: String, CodingKey { case platform, token, lastSentAt, lastError } }
+struct DevicesResponse: Decodable { let providers: PushProviders; let devices: [PushDevice] }
+struct PushTestResult: Decodable { let platform: String; let token: String; let ok: Bool; let error: String?
+    init(from d: Decoder) throws { let c = try d.container(keyedBy: CodingKeys.self); platform = (try? c.decode(String.self, forKey: .platform)) ?? ""; token = (try? c.decode(String.self, forKey: .token)) ?? ""
+        ok = (try? c.decode(Bool.self, forKey: .ok)) ?? false; error = (try? c.decodeIfPresent(String.self, forKey: .error)) ?? nil }
+    enum CodingKeys: String, CodingKey { case platform, token, ok, error } }
+struct PushTestResponse: Decodable { let providers: PushProviders; let registered: Int; let results: [PushTestResult] }

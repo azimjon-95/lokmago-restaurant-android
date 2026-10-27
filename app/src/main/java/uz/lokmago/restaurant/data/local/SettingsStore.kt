@@ -22,6 +22,8 @@ private val Context.ds by preferencesDataStore("lokmago_settings")
 data class AppSettings(
     val sound: Boolean = true, val vibration: Boolean = true, val notifications: Boolean = true,
     val volume: Int = 2, val autoRefreshSec: Int = 10,
+    /** "Kassa rejimi": ilova ochiq paytda ekran o'chmaydi (stoldagi, zaryaddagi telefon uchun). */
+    val keepAwake: Boolean = false,
 )
 
 @Singleton
@@ -30,15 +32,17 @@ class SettingsStore @Inject constructor(@ApplicationContext private val ctx: Con
     private val kVibe = booleanPreferencesKey("vibration")
     private val kNotif = booleanPreferencesKey("notifications")
     private val kVolume = intPreferencesKey("volume")
+    private val kKeepAwake = booleanPreferencesKey("keep_awake")
     private val kRefresh = intPreferencesKey("auto_refresh_sec")
 
     val state: StateFlow<AppSettings> = ctx.ds.data
-        .map { AppSettings(it[kSound] ?: true, it[kVibe] ?: true, it[kNotif] ?: true, it[kVolume] ?: 2, it[kRefresh] ?: 10) }
+        .map { AppSettings(it[kSound] ?: true, it[kVibe] ?: true, it[kNotif] ?: true, it[kVolume] ?: 2, it[kRefresh] ?: 10, it[kKeepAwake] ?: false) }
         .stateIn(CoroutineScope(SupervisorJob() + Dispatchers.IO), SharingStarted.Eagerly, AppSettings())
 
     suspend fun setSound(v: Boolean) = ctx.ds.edit { it[kSound] = v }
     suspend fun setVibration(v: Boolean) = ctx.ds.edit { it[kVibe] = v }
     suspend fun setNotifications(v: Boolean) = ctx.ds.edit { it[kNotif] = v }
+    suspend fun setKeepAwake(v: Boolean) = ctx.ds.edit { it[kKeepAwake] = v }
     suspend fun setVolume(v: Int) = ctx.ds.edit { it[kVolume] = v.coerceIn(0, 2) }
     suspend fun setAutoRefresh(sec: Int) = ctx.ds.edit { it[kRefresh] = sec }
 }
