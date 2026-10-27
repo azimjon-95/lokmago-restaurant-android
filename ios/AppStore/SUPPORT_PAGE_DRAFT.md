@@ -11,8 +11,10 @@ Buyurtma mijozlari ma’lumotlarini himoya qilish uchun parol, tasdiqlash kodi y
 
 ## Aloqa
 
-Email: [SUPPORT_EMAIL]
-Yordam sahifasi: [PUBLIC_SUPPORT_URL]
-Maxfiylik bo‘yicha: [PRIVACY_EMAIL]
+Email: mamutaliyev95@gmail.com
+Yordam sahifasi: https://lokma.uz/support/
+Maxfiylik bo‘yicha: mamutaliyev95@gmail.com
 
-> Nashrdan oldin haqiqiy, kuzatiladigan aloqa manzillari bilan almashtiring. Placeholderlar bilan sahifani nashr qilmang.
+> Ommaviy yordam sahifasi: https://lokma.uz/support/
+> Maxfiylik siyosati: https://lokma.uz/privacy.html
+> Copyright: © 2026 Azimjon Mamutaliyev (Apple Developer hisobida ko‘rsatilgan ism).

@@ -9,6 +9,7 @@
 - Primary language: Uzbek
 - Suggested category: Food & Drink
 - Secondary category (optional): Business
+- Copyright: © 2026 Azimjon Mamutaliyev
 
 ## Promotional text (Uzbek)
 Restoraningiz buyurtmalarini kuzating, holatini yangilang va kunlik savdo natijalarini ko‘ring.
@@ -25,8 +26,8 @@ Ilova orqali:
 
 Kirish uchun Lokma Go restoran hisob qaydnomasi kerak. Buyurtmalarni ko‘rish va boshqarish uchun internet aloqasi zarur. Ilovadagi ma’lumotlar hisobingizga ruxsat berilgan restoran va xodimlar uchun mo‘ljallangan.
 
-Yordam: [PUBLIC_SUPPORT_URL]
-Maxfiylik siyosati: [PUBLIC_PRIVACY_URL]
+Yordam: https://lokma.uz/support/
+Maxfiylik siyosati: https://lokma.uz/privacy.html
 
 ## Keywords
 restoran, buyurtma, lokma, taom, yetkazib berish, savdo, hisobot
@@ -35,8 +36,7 @@ restoran, buyurtma, lokma, taom, yetkazib berish, savdo, hisobot
 This is an operations app for restaurants using Lokma Go. Review access requires a test restaurant account with sample orders. Provide reviewer credentials and setup instructions in App Store Connect only after creating a non-production test account. Do not use a real restaurant or customer account for review.
 
 ## Required before submission
-- Replace both public URL placeholders with live HTTPS pages.
-- Confirm the legal seller/operator name and support contact.
+- Copyright may be entered as `© 2026 Azimjon Mamutaliyev`, matching the Apple Developer account name; confirm it is the legal rights holder before final submission.
 - Confirm which screenshots and localizations will be submitted.
 - Provide a dedicated App Review test account and sample data.
 - Confirm the privacy labels against actual backend collection, use, sharing, retention, and deletion behavior.
