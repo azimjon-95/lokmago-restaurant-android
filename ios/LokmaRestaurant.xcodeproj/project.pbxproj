@@ -29,6 +29,7 @@
 		A20000000000000000000113 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000113 /* AppDelegate.swift */; };
 		A20000000000000000000114 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000114 /* DesignTokens.swift */; };
 		A20000000000000000000201 /* order_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000201 /* order_alert.wav */; };
+		A20000000000000000000203 /* order_alert_long.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000203 /* order_alert_long.wav */; };
 		A20000000000000000000301 /* CloudinaryUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000301 /* CloudinaryUploader.swift */; };
 		A20000000000000000000302 /* MenuStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000302 /* MenuStore.swift */; };
 		A20000000000000000000303 /* ImageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000303 /* ImageViews.swift */; };
@@ -69,6 +70,7 @@
 		B20000000000000000000114 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		B20000000000000000000201 /* order_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = order_alert.wav; sourceTree = "<group>"; };
 		B20000000000000000000202 /* LokmaRestaurant.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LokmaRestaurant.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000203 /* order_alert_long.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = order_alert_long.wav; sourceTree = "<group>"; };
 		B20000000000000000000301 /* CloudinaryUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudinaryUploader.swift; sourceTree = "<group>"; };
 		B20000000000000000000302 /* MenuStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuStore.swift; sourceTree = "<group>"; };
 		B20000000000000000000303 /* ImageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViews.swift; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 				B20000000000000000000113 /* AppDelegate.swift */,
 				B20000000000000000000114 /* DesignTokens.swift */,
 				B20000000000000000000201 /* order_alert.wav */,
+				B20000000000000000000203 /* order_alert_long.wav */,
 				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
 				B20000000000000000000401 /* NetworkMonitor.swift */,
 				B20000000000000000000402 /* PermissionsView.swift */,
@@ -211,6 +214,7 @@
 			files = (
 				A10000000000000000000007 /* Assets.xcassets in Resources */,
 				A20000000000000000000201 /* order_alert.wav in Resources */,
+				A20000000000000000000203 /* order_alert_long.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -287,10 +291,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LokmaRestaurant/LokmaRestaurant.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 8A38QL5HR2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LokmaRestaurant/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = uz.lokmago.restaurant.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -306,10 +312,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LokmaRestaurant/LokmaRestaurant.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 8A38QL5HR2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LokmaRestaurant/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = uz.lokmago.restaurant.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

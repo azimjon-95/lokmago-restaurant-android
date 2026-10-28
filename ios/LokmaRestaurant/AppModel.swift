@@ -149,9 +149,6 @@ enum Prefs {
         switch phase {
         case .active:
             Task { await wake() }
-        case .background:
-            // The app is about to be suspended: if orders are still unaccepted, let the system keep nudging.
-            if !queue.isEmpty && !silenced { AlertCenter.shared.scheduleBackgroundAlerts(for: queue) }
         default: break
         }
     }
@@ -175,11 +172,13 @@ enum Prefs {
 
     /// "Chiqish" tugmasi: avval push tokenini serverdan o'chiradi (JWT hali bor), keyin sessiyani yopadi.
     func logout() async {
-        if isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") { try? await api.unregisterDevice(token: hex) }
-        signOut()
+        signOut()          // signOut() removes this iPhone's push token from the server (while the JWT is still valid)
     }
 
     func signOut() {
+        if let auth = token, let hex = UserDefaults.standard.string(forKey: "apns-token") {
+            Task { try? await api.unregisterDevice(token: hex, bearer: auth) }
+        }
         pollingTask?.cancel(); socket.disconnect(); AlertCenter.shared.stopRinging(); AlertCenter.shared.cancelBackgroundAlerts()
         menu.reset()
         token = nil; restaurant = nil; orders = []; stats = nil; socketJoined = false; knownPending = []; silenced = false; minimized = false; showConnecting = false
@@ -288,6 +287,15 @@ enum Prefs {
     func applyKeepAwake() { UIApplication.shared.isIdleTimerDisabled = Prefs.keepAwake }
 
     func pushArrived() { Task { await refresh() } }
+
+    /// Lock-screen action; orderFlow on the server validates that it is still pending.
+    func handleOrderNotificationAction(orderId: String, status: String) {
+        guard status == "accepted" || status == "cancelled" else { return }
+        Task {
+            do { _ = try await api.setStatus(id: orderId, status: status); await refresh() }
+            catch { handle(error); await refresh() }
+        }
+    }
 
     func startPolling() {
         pollingTask?.cancel()

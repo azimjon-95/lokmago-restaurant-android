@@ -1,44 +1,24 @@
-> **Holat:** serverda amalga oshirildi — `lakmago-server` `main` `fb3b300` (`src/services/mobilePush.js`, `docs/MOBIL-PUSH.md`). Quyidagi shartnoma o'sha kod bilan bir xil. Audit: [PUSH-AUDIT.md](PUSH-AUDIT.md).
+> **Holat:** server tomoni amalga oshirilgan — `lakmago-server` `main` (`src/services/mobilePush.js`, `docs/MOBIL-PUSH.md`, `POST /api/panel/devices/test`). Audit va sinov holati: [PUSH-AUDIT.md](PUSH-AUDIT.md).
 
-# Server push shartnomasi (lakmago-server uchun)
+# iOS buyurtma pushlari
 
-Hozir lakmago-serverda push yo'q: yopiq iOS ilova va «uxlab qolgan» Android ilova yangi buyurtmani bilmaydi.
-Quyidagilar qo'shilsa ikkala platforma ham SMS kabi uyg'otadi. (Avvalgi BFF'dagi `push.js`/`devices.js` namuna sifatida
-zaxira arxivda: `lokmago-restaurant-backend.bundle`.)
+`lakmago-server` da APNs endpointi va pending buyurtmalarni 30 soniyada takrorlab ogohlantirish mexanizmi tayyor. iOS ilova restoran JWT bilan `POST /api/panel/devices` orqali APNs tokenini yuboradi; server restoran doirasini faqat JWT'dan oladi. Chiqishda `DELETE /api/panel/devices` qurilma tokenini ajratadi.
 
-## 1. Qurilma ro'yxati
+## APNs server sozlamalari
 
-`POST /api/panel/devices`  (restoran JWT bilan; `restaurantId` tokendan olinadi, bodyda yo'q)
-```json
-{ "token": "<FCM token yoki APNs device token (hex)>", "platform": "android" | "ios" }
+Apple Developer hisobida APNs uchun `.p8` Auth Key yarating va uni serverga repo tashqarisida xavfsiz joylashtiring. Quyidagi qiymatlarni server muhitiga qo‘shing; maxfiy kalitni gitga yoki chatga yubormang:
+
+```env
+APNS_KEY_PATH=/secure/path/AuthKey_XXXXXXXXXX.p8
+APNS_KEY_ID=XXXXXXXXXX
+APNS_TEAM_ID=8A38QL5HR2
+APNS_TOPIC=uz.lokmago.restaurant.ios
 ```
-`204`. Bir token faqat bitta restoranda: boshqa restoranga kirilsa eski bog'lanish o'chadi. `DELETE /api/panel/devices`
-(body: `{token}`) — chiqishda. Yaroqsiz token (`UNREGISTERED`, APNs `410`) avtomatik o'chiriladi.
-Ilova iOS tokenini allaqachon yuboradi (`APIClient.registerDevice`); Android FCM tokenini yuborish
-`DeviceRegistrar.register` ichida bir qator (endpoint tayyor bo'lgach yoqiladi).
 
-## 2. Yangi buyurtma → push (restoranning barcha qurilmalariga)
+Xcode debug tokeni avtomatik `development`, Release/TestFlight/App Store tokeni `production` sifatida ro‘yxatdan o‘tadi. Sozlama kiritilib API server qayta ishga tushmaguncha qulflangan telefonga push kelmaydi.
 
-**Android** (FCM HTTP v1) — faqat `data`, `android.priority = "high"` (ilova yopiq bo'lsa ham uyg'otadi):
-```json
-{ "message": { "token": "…", "android": { "priority": "high", "ttl": "120s" },
-  "data": { "type": "order_new", "orderId": "…", "title": "🔔 Yangi buyurtma", "body": "#125 • 128 000 so'm" } } }
-```
-**iOS** (FCM `apns` bloki yoki to'g'ridan-to'g'ri APNs; `apns-push-type: alert`, `apns-priority: 10`):
-```json
-{ "aps": { "alert": { "title": "🔔 Yangi buyurtma", "body": "#125 • 128 000 so'm" },
-           "sound": "order_alert.wav", "interruption-level": "time-sensitive", "thread-id": "orders" },
-  "orderId": "…" }
-```
-`sound` — ilova ichidagi fayl nomi (≤30 s). Critical Alerts ruxsati kelsa: `"sound": {"critical": 1, "name": "order_alert.wav", "volume": 1.0}`.
+## Fon ovozi va to‘xtatish
 
-## 3. Qabul qilinguncha takrorlash (iOS uchun majburiy)
+Server order pending bo‘lib turganida APNs alertni har 30 soniyada takrorlaydi. `orderFlow` buyurtmani `accepted` yoki `cancelled` holatiga o‘tkazib bildirishnomani yopgach, takrorlash to‘xtaydi. iOS bildirishnomasi ilova ichidagi 28 soniyalik `order_alert_long.wav` faylini ishlatadi. Lock-screen’dan “Qabul qilish” yoki “Bekor qilish” tugmasi API’dagi mavjud order status endpointiga boradi.
 
-iOS o'zi takrorlay olmaydi. Server har yangi `pending` buyurtma uchun: **30 soniyada bir marta** (eng ko'pi bilan ~10 marta)
-shu push'ni qayta yuborsin va buyurtma `pending` dan chiqishi bilan (qabul / bekor / boshqa qurilma) to'xtatsin.
-Android'da takror kerak emas (ilova o'zi chaladi), lekin zararsiz: `OrderQueue` takrorni tashlaydi.
-
-## 4. Yopilgan buyurtma push'i (ixtiyoriy)
-
-`type: "order_updated"` / `"order_cancelled"` (Android data) — ilova ro'yxatni yangilaydi va eski bildirishnomani olib tashlaydi.
-iOS uchun `content-available: 1` bilan jim push.
+iOS ilovaga fon rejimida cheksiz audio ijro etishga ruxsat bermaydi. Shu bois push ovozi har safar ko‘pi bilan 30 soniya chalinadi va navbatdagi push 30 soniyadan keyin keladi. iPhone’dagi notification sounds, Focus va tarmoq holati yetkazilish/ovozga ta’sir qiladi. Critical Alerts alohida Apple ruxsatisiz ishlatilmaydi.

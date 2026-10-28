@@ -155,7 +155,7 @@ struct HistoryPage: Decodable {
     }
 }
 struct StatusRequest: Encodable { let status: String }
-struct DeviceRequest: Encodable { let token: String; let platform: String }
+struct DeviceRequest: Encodable { let token: String; let platform: String; let environment: String }
 
 // ---- Menyu: /api/panel/dishes (controllers/restaurantPanel.js, models/Dish.js) ----
 struct DishOption: Decodable { let name: String; let price: Int64; let mandatory: Bool }

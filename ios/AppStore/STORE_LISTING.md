@@ -40,3 +40,11 @@ This is an operations app for restaurants using Lokma Go. Review access requires
 - Confirm which screenshots and localizations will be submitted.
 - Provide a dedicated App Review test account and sample data.
 - Confirm the privacy labels against actual backend collection, use, sharing, retention, and deletion behavior.
+
+## App Privacy questionnaire — initial code-based answers
+
+- User ID/account ID: collected for app functionality, linked to the restaurant account, not used for tracking.
+- Tracking: no tracking SDK or advertising framework is present in the iOS target.
+- Customer order fields shown by the app and any request/IP logs must be reviewed with the backend operator before finalizing the questionnaire.
+
+Apple requires the App Store Connect privacy details to cover the app and third-party partners, including data retained by the service beyond the real-time request. Confirm server retention and logging before submitting these answers.
