@@ -44,9 +44,11 @@ private val VOLUME = listOf("Past", "O'rta", "Baland")
 private val REFRESH = listOf(0, 5, 10, 30)
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val store: SettingsStore, session: SessionStore, private val readiness: AlertReadiness) : ViewModel() {
+class SettingsViewModel @Inject constructor(private val store: SettingsStore, private val sessionStore: SessionStore, private val readiness: AlertReadiness) : ViewModel() {
     val settings = store.state
-    val session = session.session
+    val session = sessionStore.session
+    val persistentListener = sessionStore.persistentListener
+    fun persistentListener(on: Boolean) = sessionStore.setPersistentListener(on)
     val checks = MutableStateFlow(readiness.check())
     fun refreshChecks() { checks.value = readiness.check() }
     fun sound(v: Boolean) = viewModelScope.launch { store.setSound(v) }
@@ -64,6 +66,7 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
     val checks by vm.checks.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     var showPush by remember { mutableStateOf(false) }
+    val persistent by vm.persistentListener.collectAsStateWithLifecycle()
     if (showPush) PushCheckDialog(onDismiss = { showPush = false })
     // The user flips switches in system settings and comes back: re-check on every resume.
     val owner = LocalLifecycleOwner.current
@@ -85,6 +88,7 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
             Toggle(R.drawable.ic_vibrate, "Vibratsiya", cfg.vibration, vm::vibration)
             Toggle(R.drawable.ic_bell, "Bildirishnoma", cfg.notifications, vm::notifications)
             Toggle(R.drawable.ic_clock, "Ekran o'chmasin (kassa rejimi)", cfg.keepAwake, vm::keepAwake)
+            Toggle(R.drawable.ic_refresh, "Fon ulanishi (doimiy bildirishnoma)", persistent, vm::persistentListener)
             Row2(R.drawable.ic_refresh, "Avto yangilash", if (cfg.autoRefreshSec == 0) "O'chiq" else "${cfg.autoRefreshSec} soniya") { vm.cycleRefresh(cfg.autoRefreshSec) }
             Row2(R.drawable.ic_volume, "Ovozni sozlash", VOLUME[cfg.volume.coerceIn(0, 2)], last = true) { vm.cycleVolume(cfg.volume) }
         }

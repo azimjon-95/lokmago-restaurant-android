@@ -31,6 +31,15 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     /** The login name (never the password) survives logout/expiry so the login form can be pre-filled. */
     val lastLogin: String get() = prefs.getString(K_LAST_LOGIN, "") ?: ""
 
+    /**
+     * The always-on connection service (a low-priority "Ulanish faol" notification that keeps the socket alive). FCM is the primary
+     * background channel; this is the optional extra. Costs battery and needs a Play Console foreground-service declaration, so the user can
+     * switch it off. Kept here (synchronous prefs) because BootReceiver must read it without waiting for DataStore.
+     */
+    private val _persistentListener = MutableStateFlow(prefs.getBoolean("persistent_listener", true))
+    val persistentListener: StateFlow<Boolean> = _persistentListener.asStateFlow()
+    fun setPersistentListener(on: Boolean) { prefs.edit().putBoolean("persistent_listener", on).apply(); _persistentListener.value = on }
+
     /** Permission walk-through shown once per device (survives logout on purpose). */
     var permissionsOnboarded: Boolean
         get() = prefs.getBoolean("permissions_onboarded", false)

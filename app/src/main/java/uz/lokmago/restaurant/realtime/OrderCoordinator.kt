@@ -84,7 +84,7 @@ class OrderCoordinator @Inject constructor(
             socket.events.collect { e ->
                 when (e) {
                     is SocketEvent.MenuChanged -> Unit                                   // MenuStore handles it
-                    SocketEvent.Connected -> { syncPending(); devices.register() }   // reconnect ⇒ re-sync, nothing is lost
+                    SocketEvent.Connected -> { syncPending(); devices.ensureRegistered() }   // reconnect ⇒ re-sync, nothing is lost
                     is SocketEvent.OrderNew -> ingest(e.order)
                     is SocketEvent.OrderUpdated -> { queue.offer(e.order).also { if (it) arrived(e.order) }; _changes.emit(e.order) }
                     is SocketEvent.OrderTouched -> onRemoteChange(e.orderId)
@@ -92,7 +92,8 @@ class OrderCoordinator @Inject constructor(
                 }
             }
         }
-        scope.launch { session.session.collect { if (it == null) stop() } }
+        // login and JWT rotation (a new Session) register this phone's push token; logout stops everything
+        scope.launch { session.session.collect { if (it == null) stop() else devices.ensureRegistered() } }
         scope.launch { syncPending() }
     }
 
