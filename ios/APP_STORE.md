@@ -11,13 +11,17 @@
 
 ## Store materials
 
+- App Store Support URL: `https://lokma.uz/support/` (public HTTPS page verified).
+- Privacy policy URL: `https://lokma.uz/privacy.html` (public HTTPS page verified).
+- Copyright field: `© 2026 Azimjon Mamutaliyev` (matches the Apple Developer account display name).
+
 - Listing metadata: `ios/AppStore/STORE_LISTING.md`.
 - Privacy policy draft: `ios/AppStore/PRIVACY_POLICY_DRAFT.md`.
 - Support page draft: `ios/AppStore/SUPPORT_PAGE_DRAFT.md`.
 - The icon asset is 1024×1024 PNG with no alpha channel.
 - `PrivacyInfo.xcprivacy` declares the account identifier and app-local UserDefaults access. The App Store Connect privacy answers must also include any data the server retains, including relevant account and request log data.
 
-Replace all bracketed placeholders and publish the policy/support pages at public HTTPS URLs. Confirm the legal operator, retention/deletion practices, and privacy contact with the service owner before submission.
+Confirm the copyright holder’s legal name, legal operator, retention/deletion practices, and privacy contact with the service owner before submission.
 
 ## Checks completed
 
@@ -30,7 +34,7 @@ Replace all bracketed placeholders and publish the policy/support pages at publi
 
 - Sign the fresh archive with Apple Distribution before upload.
 - Create the App Store Connect app record; provide a non-production restaurant account for review.
-- Finalize App Privacy answers and publish privacy/support URLs.
+- Finalize App Privacy answers and verify the policy/support pages and legal copyright owner.
 - Capture at least one screenshot at Apple's required iPhone display size with Dynamic Island. The connected iPhone 13 Pro does not provide that display size; CoreSimulator was unavailable when checked.
 - Test sign-in, order status transitions, reports, session refresh, and offline/error behavior with a test restaurant.
 - Configure `lakmago-server` APNs environment (`APNS_KEY_PATH`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_TOPIC`) before relying on order alerts while the app is closed; see `docs/SERVER-PUSH.md`.
