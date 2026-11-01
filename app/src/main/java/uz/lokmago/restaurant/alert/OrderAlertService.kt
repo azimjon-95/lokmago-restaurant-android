@@ -35,6 +35,7 @@ class OrderAlertService : Service() {
     @Inject lateinit var alert: AlertController
     @Inject lateinit var notifier: Notifier
     @Inject lateinit var settings: SettingsStore
+    @Inject lateinit var session: uz.lokmago.restaurant.data.local.SessionStore
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var job: Job? = null
@@ -57,7 +58,7 @@ class OrderAlertService : Service() {
         if (job == null) {
             job = scope.launch {
                 combine(queue.state, alert.silenced, alert.unresolved, settings.state) { s, silenced, unresolved, cfg ->
-                    Snapshot(s, silenced, unresolved.isNotEmpty(), cfg.sound, cfg.vibration, cfg.volume)
+                    Snapshot(s, silenced, unresolved.isNotEmpty(), cfg.sound && session.serverSound, cfg.vibration && session.serverVibration, cfg.volume)   // user switch AND admin policy
                 }.collect { render(it) }
             }
         }

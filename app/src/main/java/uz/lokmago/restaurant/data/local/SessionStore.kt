@@ -40,6 +40,18 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     val persistentListener: StateFlow<Boolean> = _persistentListener.asStateFlow()
     fun setPersistentListener(on: Boolean) { prefs.edit().putBoolean("persistent_listener", on).apply(); _persistentListener.value = on }
 
+    /** Random per-install id (NOT the Android ID): lets the admin panel tell two phones of one restaurant apart. */
+    val deviceId: String
+        get() = prefs.getString("device_id", null) ?: java.util.UUID.randomUUID().toString().also { prefs.edit().putString("device_id", it).apply() }
+
+    /** Admin-panel policy for the alarm (last known). Applied together with the user's own switches: either one off = off. */
+    var serverSound: Boolean
+        get() = prefs.getBoolean("server_sound", true)
+        set(v) { prefs.edit().putBoolean("server_sound", v).apply() }
+    var serverVibration: Boolean
+        get() = prefs.getBoolean("server_vibration", true)
+        set(v) { prefs.edit().putBoolean("server_vibration", v).apply() }
+
     /** Permission walk-through shown once per device (survives logout on purpose). */
     var permissionsOnboarded: Boolean
         get() = prefs.getBoolean("permissions_onboarded", false)

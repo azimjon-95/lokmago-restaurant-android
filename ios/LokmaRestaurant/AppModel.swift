@@ -136,7 +136,10 @@ enum Prefs {
     // ---- permissions ---------------------------------------------------------------------------------
     func refreshPermissionState() async {
         let rows = await AlertCenter.shared.readiness()
-        notificationsAllowed = rows.first { $0.id == "auth" }?.ok ?? true
+        let allowed = rows.first { $0.id == "auth" }?.ok ?? true
+        notificationsAllowed = allowed
+        // The user switched the permission in system Settings: the server (admin panel "Qurilmalar") should know
+        if UserDefaults.standard.object(forKey: "apns-registered-allowed") == nil || UserDefaults.standard.bool(forKey: "apns-registered-allowed") != allowed { registerStoredPushToken() }
     }
 
     func permissionsFinished() {
@@ -277,9 +280,17 @@ enum Prefs {
     private func registerStoredPushToken() {
         guard isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") else { return }
         Task {
-            do { try await api.registerDevice(token: hex); UserDefaults.standard.set("ok", forKey: "apns-server") }
+            let enabled = await AlertCenter.shared.authorizationStatus()
+            let on = enabled == .authorized || enabled == .provisional || enabled == .ephemeral
+            UserDefaults.standard.set(on, forKey: "apns-registered-allowed")
+            do { try await api.registerDevice(token: hex, notificationsEnabled: on); UserDefaults.standard.set("ok", forKey: "apns-server") }
             catch { UserDefaults.standard.set(error.localizedDescription, forKey: "apns-server") }   // shown by "Push tekshiruvi"
         }
+    }
+    /// The tapped notification: tell the server it was opened (delivery monitoring) and show the app.
+    func pushOpened(orderId: String, attempt: Int) {
+        guard isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") else { return }
+        Task { await api.ackDevice(token: hex, orderId: orderId, attempt: attempt, event: "opened") }
     }
     func pushRegistrationFailed(_ reason: String) { UserDefaults.standard.set(reason, forKey: "apns-error") }
 

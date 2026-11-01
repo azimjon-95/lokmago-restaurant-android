@@ -17,6 +17,7 @@ class DeviceRegistrationTest {
     private class Harness(
         var jwt: String? = "jwt1", var stored: String? = null, var firebase: String? = "tokA",
         var failPosts: Int = 0, var failDelete: Boolean = false, backoff: List<Long> = listOf(5L, 5L, 5L), maxAttempts: Int = 8,
+        var meta: String = "granted",
     ) {
         val posts = mutableListOf<String>(); val deletes = mutableListOf<String>()
         val inFlight = AtomicInteger(); var maxInFlight = 0
@@ -28,7 +29,7 @@ class DeviceRegistrationTest {
                 try { if (failPosts > 0) { failPosts--; throw IOException("offline") }; posts += t } finally { inFlight.decrementAndGet() }
             },
             delete = { t -> if (failDelete) throw IOException("offline"); deletes += t },
-            scope = scope, backoffMs = backoff, maxAttempts = maxAttempts,
+            scope = scope, backoffMs = backoff, maxAttempts = maxAttempts, metaKey = { meta },
         )
         fun close() = scope.cancel()
     }
@@ -86,6 +87,13 @@ class DeviceRegistrationTest {
         val h = Harness()
         h.reg.register(); h.jwt = "jwt2"; h.reg.register()
         assertEquals(listOf("tokA", "tokA"), h.posts); h.close()
+    }
+
+    @Test fun `a change of notification permission or app version registers again, an unchanged state does not`() = runBlocking {
+        val h = Harness()
+        h.reg.register(); h.reg.register(); assertEquals(1, h.posts.size)
+        h.meta = "denied"; assertTrue(h.reg.register()); assertEquals("permission switched off in system settings: the server learns about it", 2, h.posts.size)
+        h.reg.register(); assertEquals(2, h.posts.size); h.close()
     }
 
     @Test fun `simultaneous triggers (login + reconnect + onNewToken) produce ONE request`() = runBlocking {

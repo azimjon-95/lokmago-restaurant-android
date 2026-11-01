@@ -155,7 +155,13 @@ struct HistoryPage: Decodable {
     }
 }
 struct StatusRequest: Encodable { let status: String }
-struct DeviceRequest: Encodable { let token: String; let platform: String; let environment: String }
+/// POST /api/panel/devices. deviceId = random per-install id (NOT a hardware id); notificationsEnabled = OS permission, shown in admin "Qurilmalar".
+struct DeviceRequest: Encodable {
+    let token: String; let platform: String; let environment: String
+    var deviceId: String? = nil; var appVersion: String? = nil; var notificationsEnabled: Bool? = nil
+}
+/// POST /api/panel/devices/ack — the notification was tapped ("opened"). (iOS runs no app code when an alert push arrives, so there is no "received".)
+struct DeviceAckRequest: Encodable { let token: String; let orderId: String; let attempt: Int; let event: String }
 
 // ---- Menyu: /api/panel/dishes (controllers/restaurantPanel.js, models/Dish.js) ----
 struct DishOption: Decodable { let name: String; let price: Int64; let mandatory: Bool }

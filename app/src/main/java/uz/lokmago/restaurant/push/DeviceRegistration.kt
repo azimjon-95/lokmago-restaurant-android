@@ -30,6 +30,8 @@ class DeviceRegistration(
     private val scope: CoroutineScope,
     private val backoffMs: List<Long> = DEFAULT_BACKOFF_MS,
     private val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
+    /** Anything the server stores about this phone besides the token (notification permission, app version): a change registers again. */
+    private val metaKey: () -> String = { "" },
 ) {
     private val lock = Mutex()
     @Volatile private var registeredFor: String? = null
@@ -40,7 +42,7 @@ class DeviceRegistration(
         val current = token ?: fetchToken() ?: storedToken() ?: return false
         saveToken(current)                                   // remember it even when logged out: registered right after login
         val session = jwt() ?: return false
-        val key = "$session|$current"
+        val key = "$session|$current|${metaKey()}"
         if (registeredFor == key) return true
         try {
             post(current)

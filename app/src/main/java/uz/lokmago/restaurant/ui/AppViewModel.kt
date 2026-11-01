@@ -24,6 +24,7 @@ class AppViewModel @Inject constructor(
     private val coordinator: OrderCoordinator,
     private val sessionStore: SessionStore,
     private val readiness: AlertReadiness,
+    private val devices: uz.lokmago.restaurant.push.DeviceRegistrar,
     net: NetworkMonitor,
     socket: SocketManager,
     private val alert: AlertController,
@@ -86,7 +87,7 @@ class AppViewModel @Inject constructor(
     fun deferHead() = coordinator.deferHead()
     fun minimize() { hidden.value = true }
     fun showAlert() { hidden.value = false }
-    fun sync() { viewModelScope.launch { coordinator.syncPending(); menu.reconcile() } }
+    fun sync() { viewModelScope.launch { coordinator.syncPending(); menu.reconcile(); devices.ensureRegistered(); devices.syncPolicy() } }
     /** Sliding session: a restaurant that keeps using the app is never asked for its password again. */
     fun refreshSession() { viewModelScope.launch { auth.refreshIfStale() } }
     fun logout() { viewModelScope.launch { coordinator.logout() } }

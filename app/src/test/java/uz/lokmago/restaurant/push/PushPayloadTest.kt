@@ -9,12 +9,21 @@ class PushPayloadTest {
 
     @Test fun `new order push is parsed with its text`() {
         val m = PushPayload.parse(mapOf("type" to "order_new", "orderId" to id, "title" to "🔔 Yangi buyurtma", "body" to "#125 • 128 000 so'm", "sendNo" to "2"))
-        assertEquals(PushMessage.NewOrder(id, "🔔 Yangi buyurtma", "#125 • 128 000 so'm"), m)
+        assertEquals(PushMessage.NewOrder(id, "🔔 Yangi buyurtma", "#125 • 128 000 so'm", attempt = 2), m)
     }
 
     @Test fun `missing title and body get a default, never null`() {
         val m = PushPayload.parse(mapOf("type" to "order_new", "orderId" to id)) as PushMessage.NewOrder
         assertEquals("🔔 Yangi buyurtma", m.title); assertEquals("", m.body)
+    }
+
+    @Test fun `attempt, sound and vibration come from the server, absent means on (older server)`() {
+        val m = PushPayload.parse(mapOf("type" to "order_new", "orderId" to id, "attempt" to "3", "sound" to "0", "vibration" to "0")) as PushMessage.NewOrder
+        assertEquals(3, m.attempt); assertFalse(m.sound); assertFalse(m.vibration)
+        val old = PushPayload.parse(mapOf("type" to "order_new", "orderId" to id, "sendNo" to "2")) as PushMessage.NewOrder
+        assertEquals(2, old.attempt); assertTrue(old.sound); assertTrue(old.vibration)
+        assertEquals(1, (PushPayload.parse(mapOf("type" to "order_new", "orderId" to id)) as PushMessage.NewOrder).attempt)
+        assertEquals(50, (PushPayload.parse(mapOf("type" to "order_new", "orderId" to id, "attempt" to "9999")) as PushMessage.NewOrder).attempt)
     }
 
     @Test fun `accepted and cancelled map to OrderChanged`() {

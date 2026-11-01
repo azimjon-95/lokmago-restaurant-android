@@ -130,13 +130,23 @@ final class APIClient {
     func testPush() async throws -> PushTestResponse { try await request("panel/devices/test", method: "POST") }
     /// APNs token for background order alerts; server maps it to the authenticated restaurant. `environment` tells the server
     /// which APNs gateway this token belongs to (Xcode/debug builds are "development", TestFlight/App Store "production").
-    func registerDevice(token: String) async throws {
+    func registerDevice(token: String, notificationsEnabled: Bool? = nil) async throws {
         #if DEBUG
         let environment = "development"
         #else
         let environment = "production"
         #endif
-        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios", environment: environment), idempotent: true)
+        _ = try await requestRaw("panel/devices", method: "POST", body: DeviceRequest(token: token, platform: "ios", environment: environment,
+                                                                                deviceId: Self.deviceId, appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+                                                                                notificationsEnabled: notificationsEnabled), idempotent: true)
+    }
+    /// Per-install random id (not the IDFV / hardware id): lets the admin panel tell two phones of one restaurant apart.
+    static var deviceId: String {
+        if let id = UserDefaults.standard.string(forKey: "device-id") { return id }
+        let id = UUID().uuidString; UserDefaults.standard.set(id, forKey: "device-id"); return id
+    }
+    func ackDevice(token: String, orderId: String, attempt: Int, event: String) async {
+        _ = try? await requestRaw("panel/devices/ack", method: "POST", body: DeviceAckRequest(token: token, orderId: orderId, attempt: attempt, event: event), idempotent: true)
     }
     func unregisterDevice(token: String, bearer: String) async throws {
         _ = try await requestRaw("panel/devices", method: "DELETE", body: DeviceTokenRequest(token: token), bearer: bearer)

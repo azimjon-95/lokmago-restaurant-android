@@ -84,7 +84,7 @@ class OrderCoordinator @Inject constructor(
             socket.events.collect { e ->
                 when (e) {
                     is SocketEvent.MenuChanged -> Unit                                   // MenuStore handles it
-                    SocketEvent.Connected -> { syncPending(); devices.ensureRegistered() }   // reconnect ⇒ re-sync, nothing is lost
+                    SocketEvent.Connected -> { syncPending(); devices.ensureRegistered(); scope.launch { devices.syncPolicy() } }   // reconnect ⇒ re-sync, nothing is lost
                     is SocketEvent.OrderNew -> ingest(e.order)
                     is SocketEvent.OrderUpdated -> { queue.offer(e.order).also { if (it) arrived(e.order) }; _changes.emit(e.order) }
                     is SocketEvent.OrderTouched -> onRemoteChange(e.orderId)
@@ -122,6 +122,9 @@ class OrderCoordinator @Inject constructor(
     }
 
     /** FCM path. Payload text is shown immediately; the real order is reloaded from the backend. */
+    /** Delivery receipt: the first real proof that a push reached THIS phone (server "sent" is not "delivered"). */
+    fun ackPush(orderId: String, attempt: Int) { scope.launch { devices.ack(orderId, attempt, "received") } }
+
     fun onTestPush(title: String?, body: String?) = notifier.notifyTest(title ?: "Push ishlayapti ✓", body ?: "")
 
     fun onPush(orderId: String, title: String, body: String) {

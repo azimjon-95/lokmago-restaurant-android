@@ -26,12 +26,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        let orderId = response.notification.request.content.userInfo["orderId"] as? String
+        let info = response.notification.request.content.userInfo
+        let orderId = info["orderId"] as? String
+        let attempt = (info["attempt"] as? Int) ?? Int("\(info["attempt"] ?? "")") ?? 1
         let action = response.actionIdentifier
         await MainActor.run {
             if action == "ORDER_ACCEPT", let orderId { AppModel.shared?.handleOrderNotificationAction(orderId: orderId, status: "accepted") }
             else if action == "ORDER_CANCEL", let orderId { AppModel.shared?.handleOrderNotificationAction(orderId: orderId, status: "cancelled") }
-            else { AppModel.shared?.pushArrived() }
+            else { if let orderId { AppModel.shared?.pushOpened(orderId: orderId, attempt: attempt) }; AppModel.shared?.pushArrived() }
         }
     }
 

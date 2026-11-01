@@ -175,7 +175,15 @@ fun OrderDto.toReview(): Review? {
 @Serializable data class DevicesResponseDto(val providers: PushProvidersDto = PushProvidersDto(), val devices: List<PushDeviceDto> = emptyList())
 @Serializable data class PushTestResultDto(val platform: String = "", val token: String = "", val ok: Boolean = false, val error: String? = null)
 @Serializable data class PushTestResponseDto(val providers: PushProvidersDto = PushProvidersDto(), val registered: Int = 0, val results: List<PushTestResultDto> = emptyList())
-@Serializable data class DeviceRegisterRequest(val token: String, val platform: String = "android")
+@Serializable data class DeviceRegisterRequest(
+    val token: String, val platform: String = "android",
+    /** Admin panel "Qurilmalar": qaysi telefon, qaysi versiya, bildirishnoma ruxsati yoqilganmi. null = yuborilmaydi. */
+    val deviceId: String? = null, val appVersion: String? = null, val notificationsEnabled: Boolean? = null,
+)
+/** "Push yetib keldi" (received) / "bildirishnoma bosildi" (opened) — server jurnalida SENT dan RECEIVED/OPENED ga o'tadi. */
+@Serializable data class DeviceAckRequest(val token: String, val orderId: String, val attempt: Int, val event: String)
+/** Restoran sozlamasi (admin panel → Bildirishnomalar): ovoz va tebranish ilovada ham hurmat qilinadi. */
+@Serializable data class NotifySettingsDto(val sound: Boolean = true, val vibration: Boolean = true)
 @Serializable data class DeviceUnregisterRequest(val token: String)
 
 /** GET /api/upload/signature — Cloudinary'ga TO'G'RIDAN yuklash uchun imzo (secret telefonga tushmaydi). */

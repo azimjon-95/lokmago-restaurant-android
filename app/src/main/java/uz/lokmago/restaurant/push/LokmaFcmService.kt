@@ -38,7 +38,11 @@ class LokmaFcmService : FirebaseMessagingService() {
         if (session.token == null) return                       // logged out: ignore
         when (m) {
             is PushMessage.Test -> coordinator.onTestPush(m.title, m.body)
-            is PushMessage.NewOrder -> coordinator.onPush(m.orderId, m.title, m.body)
+            is PushMessage.NewOrder -> {
+                session.serverSound = m.sound; session.serverVibration = m.vibration      // admin policy, applied to this alarm right away
+                coordinator.onPush(m.orderId, m.title, m.body)
+                coordinator.ackPush(m.orderId, m.attempt)                                // "yetib keldi" (async, never blocks this callback)
+            }
             is PushMessage.OrderChanged -> coordinator.onRemoteChange(m.orderId)
             is PushMessage.DeliveryReminder -> coordinator.onDeliveryReminder(m.orderId, m.count, m.title, m.body)
             PushMessage.Ignored -> Unit
