@@ -58,4 +58,13 @@ class PushPayloadTest {
         fun count(v: String?) = (PushPayload.parse(buildMap { put("type", "order_delivery_reminder"); put("orderId", id); if (v != null) put("reminderCount", v) }) as PushMessage.DeliveryReminder).count
         assertEquals(1, count(null)); assertEquals(1, count("abc")); assertEquals(1, count("-5")); assertEquals(3, count("3")); assertEquals(20, count("9999"))
     }
+
+    @Test fun `courier offer and closed are parsed, validated, and carry no customer data`() {
+        val m = PushPayload.parse(mapOf("type" to "courier_offer", "assignmentId" to id, "title" to "🛵 Yangi yetkazish", "body" to "Osh Markazi • 450 m • haq 12 000 so'm"))
+        assertEquals(PushMessage.CourierOffer(id, "🛵 Yangi yetkazish", "Osh Markazi • 450 m • haq 12 000 so'm"), m)
+        assertEquals(PushMessage.CourierOfferClosed(id), PushPayload.parse(mapOf("type" to "courier_offer_closed", "assignmentId" to id)))
+        assertEquals("a bad assignmentId never reaches an API path", PushMessage.Ignored, PushPayload.parse(mapOf("type" to "courier_offer", "assignmentId" to "../x")))
+        assertEquals(PushMessage.Ignored, PushPayload.parse(mapOf("type" to "courier_offer")))
+        assertEquals("default title when the server sends none", "🛵 Yangi yetkazish", (PushPayload.parse(mapOf("type" to "courier_offer", "assignmentId" to id)) as PushMessage.CourierOffer).title)
+    }
 }

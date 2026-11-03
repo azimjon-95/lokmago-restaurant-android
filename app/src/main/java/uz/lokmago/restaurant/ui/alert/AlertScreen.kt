@@ -2,6 +2,7 @@ package uz.lokmago.restaurant.ui.alert
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -105,50 +106,48 @@ fun AlertScreen(
         }
         Spacer(Modifier.weight(1f))
 
-        Box(Modifier.size(64.dp).clip(CircleShape).background(Lg.Red.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
-            LgIcon(if (silenced) R.drawable.ic_volume_off else R.drawable.ic_volume, Lg.Red, 30.dp)
-        }
-        Spacer(Modifier.height(10.dp))
+        // The speaker button IS the mute control (tap = silence the alarm; the order stays pending). The old red "Signalni to'xtatish" button is gone.
+        Box(
+            Modifier.size(72.dp).clip(CircleShape)
+                .background(if (silenced) Lg.CardHigh else Lg.Red.copy(alpha = 0.22f))
+                .clickable(enabled = !silenced, onClick = onSilence),
+            contentAlignment = Alignment.Center,
+        ) { LgIcon(if (silenced) R.drawable.ic_volume_off else R.drawable.ic_volume, if (silenced) Lg.Muted else Lg.Red, 34.dp) }
+        Spacer(Modifier.height(8.dp))
         Text(
             when {
                 !online -> "Internet yo'q — qabul qilish uchun ulanish kerak"
-                silenced -> "Signal o'chirilgan. Buyurtma hali qabul qilinmagan."
-                else -> "Buyurtmani qabul qilmaguncha signal davom etadi…"
+                silenced -> "Ovoz o'chirildi. Buyurtma hali qabul qilinmagan."
+                else -> "Ovozni o'chirish uchun bosing. Buyurtmani qabul qilmaguncha signal davom etadi."
             },
             color = if (online) Lg.Muted else Lg.Orange, fontSize = 13.sp, textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Bottom) {
-            Column(
-                Modifier.width(96.dp).clickable(enabled = !silenced, onClick = onSilence),
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Box(Modifier.size(64.dp).clip(CircleShape).background(Lg.Red.copy(alpha = if (silenced) 0.35f else 1f)), contentAlignment = Alignment.Center) {
-                    LgIcon(R.drawable.ic_close, Dt.onAccent, 30.dp)
-                }
-                Text("Signalni to'xtatish", color = Lg.Text, fontSize = 12.sp, textAlign = TextAlign.Center)
-            }
-            Box(
-                Modifier.weight(1f).height(104.dp).clip(RoundedCornerShape(28.dp))
-                    .background(Brush.verticalGradient(listOf(Dt.green, Dt.greenEnd)).let { if (online && !busy) it else Brush.verticalGradient(listOf(Dt.green.copy(alpha = 0.4f), Dt.greenEnd.copy(alpha = 0.4f))) })
-                    .clickable(enabled = online && !busy, onClick = onAccept),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (busy) CircularProgressIndicator(Modifier.size(28.dp), color = Dt.onAccent, strokeWidth = 3.dp)
-                else Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    LgIcon(R.drawable.ic_check_circle, Dt.onAccent, 36.dp)
-                    Text("Qabul qilish", color = Dt.onAccent, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-                }
+        Box(
+            Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(28.dp))
+                .background(Brush.verticalGradient(listOf(Dt.green, Dt.greenEnd)).let { if (online && !busy) it else Brush.verticalGradient(listOf(Dt.green.copy(alpha = 0.4f), Dt.greenEnd.copy(alpha = 0.4f))) })
+                .clickable(enabled = online && !busy, onClick = onAccept),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (busy) CircularProgressIndicator(Modifier.size(28.dp), color = Dt.onAccent, strokeWidth = 3.dp)
+            else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                LgIcon(R.drawable.ic_check_circle, Dt.onAccent, 36.dp)
+                Text("Qabul qilish", color = Dt.onAccent, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Text("Tarkibini ko'rish", color = Lg.Green, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable { onOpen(head.id) }.padding(12.dp))
-            if (state.waiting.isNotEmpty())
-                Text("Keyingisiga o'tkazish", color = Lg.Muted, fontSize = 14.sp,
-                    modifier = Modifier.clickable(onClick = onDefer).padding(12.dp))
+        Spacer(Modifier.height(12.dp))
+        // "Tarkibini ko'rish": a real, clearly visible button (was a small text link). Inside the details the order can be rejected if still pending.
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).border(2.dp, Lg.Green, RoundedCornerShape(18.dp))
+                .background(Lg.Green.copy(alpha = 0.10f)).clickable { onOpen(head.id) },
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+        ) {
+            LgIcon(R.drawable.ic_utensils, Lg.GreenText, 22.dp)
+            Spacer(Modifier.width(10.dp))
+            Text("Tarkibini ko'rish", color = Lg.GreenText, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
+        if (state.waiting.isNotEmpty())
+            Text("Keyingisiga o'tkazish", color = Lg.Muted, fontSize = 14.sp, modifier = Modifier.clickable(onClick = onDefer).padding(12.dp))
     }
 }
 

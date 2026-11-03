@@ -17,6 +17,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.ui.AppViewModel
+import uz.lokmago.restaurant.ui.AppEntry
 import uz.lokmago.restaurant.ui.LokmaGoRoot
 import uz.lokmago.restaurant.ui.OpenRequest
 import uz.lokmago.restaurant.ui.theme.LokmaGoTheme
@@ -49,14 +50,17 @@ class MainActivity : ComponentActivity() {
         updater.register()
         setContent {
             LokmaGoTheme {
-                LokmaGoRoot(
-                    openRequest = openRequest,
-                    updateReady = updater.readyToInstall,
-                    updateBlocking = updater.blocking,
-                    onInstallUpdate = updater::completeFlexible,
-                    onRetryUpdate = { updater.retryBlocking(policy) },
-                    vm = vm,
-                )
+                AppEntry(restaurantContent = { switchSide ->
+                    LokmaGoRoot(
+                        openRequest = openRequest,
+                        updateReady = updater.readyToInstall,
+                        updateBlocking = updater.blocking,
+                        onInstallUpdate = updater::completeFlexible,
+                        onRetryUpdate = { updater.retryBlocking(policy) },
+                        onSwitchSide = switchSide,
+                        vm = vm,
+                    )
+                })
             }
         }
     }

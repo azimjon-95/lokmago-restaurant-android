@@ -22,11 +22,14 @@ class LokmaFcmService : FirebaseMessagingService() {
     @Inject lateinit var coordinator: OrderCoordinator
     @Inject lateinit var registrar: DeviceRegistrar
     @Inject lateinit var session: SessionStore
+    @Inject lateinit var courierRegistrar: uz.lokmago.restaurant.courier.CourierDeviceRegistrar
+    @Inject lateinit var courierNotifier: uz.lokmago.restaurant.courier.CourierNotifier
 
     /** The token rotated (reinstall, data cleared, Google decided): remember it and tell the server (retries by itself). */
     override fun onNewToken(token: String) {
         session.fcmToken = token
         registrar.ensureRegistered(token)           // logged out: only remembered, registered right after the next login
+        courierRegistrar.ensureRegistered(token)    // the same phone may be used on the courier side too (no-op without a courier session)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -35,8 +38,15 @@ class LokmaFcmService : FirebaseMessagingService() {
     }
 
     private fun handle(m: PushMessage) {
+        // Kuryer tomoni: o'z sessiyasi bilan (restoran sessiyasiga bog'liq emas)
+        when (m) {
+            is PushMessage.CourierOffer -> { if (session.courierToken != null) courierNotifier.notifyOffer(m.assignmentId, m.title, m.body); return }
+            is PushMessage.CourierOfferClosed -> { courierNotifier.cancel(m.assignmentId); return }
+            else -> Unit
+        }
         if (session.token == null) return                       // logged out: ignore
         when (m) {
+            is PushMessage.CourierOffer, is PushMessage.CourierOfferClosed -> Unit
             is PushMessage.Test -> coordinator.onTestPush(m.title, m.body)
             is PushMessage.NewOrder -> {
                 session.serverSound = m.sound; session.serverVibration = m.vibration      // admin policy, applied to this alarm right away

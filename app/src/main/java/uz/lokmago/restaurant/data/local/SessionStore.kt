@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class Session(val token: String, val restaurantName: String, val login: String)
+data class CourierSession(val token: String, val name: String, val login: String)
 
 /** JWT + identity live in EncryptedSharedPreferences (Android Keystore–backed). */
 @Singleton
@@ -40,10 +41,6 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     val persistentListener: StateFlow<Boolean> = _persistentListener.asStateFlow()
     fun setPersistentListener(on: Boolean) { prefs.edit().putBoolean("persistent_listener", on).apply(); _persistentListener.value = on }
 
-    /** Random per-install id (NOT the Android ID): lets the admin panel tell two phones of one restaurant apart. */
-    val deviceId: String
-        get() = prefs.getString("device_id", null) ?: java.util.UUID.randomUUID().toString().also { prefs.edit().putString("device_id", it).apply() }
-
     /** Admin-panel policy for the alarm (last known). Applied together with the user's own switches: either one off = off. */
     var serverSound: Boolean
         get() = prefs.getBoolean("server_sound", true)
@@ -51,6 +48,26 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     var serverVibration: Boolean
         get() = prefs.getBoolean("server_vibration", true)
         set(v) { prefs.edit().putBoolean("server_vibration", v).apply() }
+
+    // ---- Kuryer tomoni: restoran sessiyasidan ALOHIDA token (boshqa kalit bilan imzolangan, restoran API'siga kirmaydi) ----
+    private val _courier = MutableStateFlow(readCourier())
+    val courier: StateFlow<CourierSession?> = _courier.asStateFlow()
+    val courierToken: String? get() = prefs.getString("c_token", null)
+    fun saveCourier(s: CourierSession) {
+        prefs.edit().putString("c_token", s.token).putString("c_name", s.name).putString("c_login", s.login).putString("c_last_login", s.login).apply()
+        _courier.value = s
+    }
+    fun expireCourier() { prefs.edit().remove("c_token").remove("c_name").remove("c_login").apply(); _courier.value = null }
+    val lastCourierLogin: String get() = prefs.getString("c_last_login", "") ?: ""
+    private fun readCourier(): CourierSession? {
+        val t = prefs.getString("c_token", null) ?: return null
+        return CourierSession(t, prefs.getString("c_name", "") ?: "", prefs.getString("c_login", "") ?: "")
+    }
+
+    /** Bu telefon qaysi tomon uchun: "restaurant" | "courier" | null (birinchi ochilish → tanlash ekrani). Chiqishda saqlanadi. */
+    private val _role = MutableStateFlow(prefs.getString("app_role", null))
+    val role: StateFlow<String?> = _role.asStateFlow()
+    fun setRole(r: String?) { prefs.edit().apply { if (r == null) remove("app_role") else putString("app_role", r) }.apply(); _role.value = r }
 
     /** Permission walk-through shown once per device (survives logout on purpose). */
     var permissionsOnboarded: Boolean

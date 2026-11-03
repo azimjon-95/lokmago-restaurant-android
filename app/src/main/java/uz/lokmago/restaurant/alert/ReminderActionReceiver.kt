@@ -8,6 +8,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.di.AppScope
+import uz.lokmago.restaurant.realtime.ActionResult
 import uz.lokmago.restaurant.realtime.OrderCoordinator
 
 /**
@@ -20,11 +21,17 @@ import uz.lokmago.restaurant.realtime.OrderCoordinator
 class ReminderActionReceiver : BroadcastReceiver() {
     @Inject lateinit var coordinator: OrderCoordinator
     @Inject @AppScope lateinit var scope: CoroutineScope
+    @Inject lateinit var notifier: Notifier
 
     override fun onReceive(context: Context, intent: Intent) {
         val orderId = intent.getStringExtra(EXTRA_ORDER_ID) ?: return
-        val delivered = intent.action == ACTION_DELIVERED
         val pending = goAsync()
+        if (intent.action == ACTION_ACCEPT_ORDER) {
+            // "✅ Qabul qilish" on the new-order banner: same confirmed path as the button in the app (queue changes only after the server confirms)
+            scope.launch { try { if (coordinator.accept(orderId) is ActionResult.Done) notifier.cancel(orderId) } finally { pending.finish() } }
+            return
+        }
+        val delivered = intent.action == ACTION_DELIVERED
         scope.launch {
             try { coordinator.reminderAck(orderId, delivered) } finally { pending.finish() }
         }
@@ -32,6 +39,7 @@ class ReminderActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_DELIVERED = "uz.lokmago.restaurant.action.REMINDER_DELIVERED"
+        const val ACTION_ACCEPT_ORDER = "uz.lokmago.restaurant.action.ACCEPT_ORDER"
         const val ACTION_IN_PROGRESS = "uz.lokmago.restaurant.action.REMINDER_IN_PROGRESS"
         const val EXTRA_ORDER_ID = "orderId"
     }

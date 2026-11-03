@@ -39,6 +39,13 @@ class OrderRepository @Inject constructor(private val api: LokmaApi) {
         return r.toDomain()
     }
 
+    /** Rad etish (faqat qabul qilinmagan buyurtma): holat "cancelled" — mijoz va botlar o'sha mavjud yo'l bilan xabardor bo'ladi. */
+    suspend fun reject(id: String): Order {
+        val r = apiCall { api.setStatus(id, StatusRequest(OrderStatus.CANCELLED.api)) }
+        if (r.changed == false) throw AppError.AlreadyHandled()
+        return r.toDomain()
+    }
+
     /**
      * Keyingi holat. YETKAZIB BERISH buyurtmasini restoran oddiy holat bilan "Yetkazildi" qila olmaydi
      * (serverda faqat olib ketish uchun) — u `confirm-delivered` orqali yakunlanadi (Telegram botdagi

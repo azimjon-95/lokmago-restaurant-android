@@ -3,6 +3,7 @@ package uz.lokmago.restaurant.ui.detail
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -78,6 +79,21 @@ class OrderDetailViewModel @Inject constructor(
 
     /** "Jarayonda" — the delivery is still in progress. Does not change the order's status; it
      *  only tells the backend to postpone the next reminder (TZ §9/§21). */
+    /** Faqat qabul qilinmagan buyurtmani rad etish (tasdiqlash oynasidan keyin). */
+    fun reject() {
+        val o = ui.value.order ?: return
+        viewModelScope.launch {
+            ui.value = ui.value.copy(busy = true, notice = null)
+            when (val r = coordinator.reject(o.id)) {
+                is ActionResult.Done -> ui.value = ui.value.copy(order = r.order, busy = false, notice = "Buyurtma rad etildi")
+                ActionResult.AlreadyHandled -> { load().join(); ui.value = ui.value.copy(busy = false, notice = "Buyurtma allaqachon qabul qilingan yoki yakunlangan") }
+                is ActionResult.Failed -> ui.value = ui.value.copy(busy = false, notice = r.message)
+            }
+        }
+    }
+    val silenced = coordinator.silenced
+    fun silence() = coordinator.silence()
+
     fun stillInProgress() {
         val o = ui.value.order ?: return
         viewModelScope.launch {
@@ -95,6 +111,15 @@ class OrderDetailViewModel @Inject constructor(
 fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
+    val muted by vm.silenced.collectAsStateWithLifecycle()
+    var confirmReject by remember { mutableStateOf(false) }
+    if (confirmReject) AlertDialog(
+        onDismissRequest = { confirmReject = false }, containerColor = Lg.Surface,
+        title = { Text("Buyurtma rad etilsinmi?", color = Lg.Text) },
+        text = { Text("Buyurtma bekor qilinadi va mijozga xabar boradi. Bu amalni qaytarib bo'lmaydi.", color = Lg.Muted) },
+        confirmButton = { TextButton({ confirmReject = false; vm.reject() }) { Text("Rad etish", color = Lg.Red, fontWeight = FontWeight.Bold) } },
+        dismissButton = { TextButton({ confirmReject = false }) { Text("Yo'q", color = Lg.Muted) } },
+    )
     val dishes by vm.dishes.collectAsStateWithLifecycle()
     var lightbox by remember { mutableStateOf<String?>(null) }
     lightbox?.let { ImageLightbox(it) { lightbox = null } }
@@ -162,6 +187,11 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                 }
                 o.nextAction()?.let { a ->
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // A pending order may still be ringing: the mute button is right here too (not only on the alert screen)
+                        if (o.status == OrderStatus.NEW && !muted) Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Lg.Red.copy(alpha = 0.14f)).clickableNoRipple { vm.silence() }.padding(14.dp),
+                            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+                        ) { LgIcon(R.drawable.ic_volume_off, Lg.Red, 22.dp); Spacer(Modifier.width(8.dp)); Text("Ovozni o'chirish", color = Lg.Red, fontWeight = FontWeight.Bold) }
                         if (o.status == OrderStatus.DELIVERING) {
                             // Reminder-driven secondary action — order stays open, just tells the backend
                             // "hali yetkazilmoqda" so the next automatic reminder is postponed (TZ §9/§21).
@@ -169,6 +199,12 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                         }
                         PrimaryButton(a.label, icon = if (o.status == OrderStatus.ACCEPTED) R.drawable.ic_chef_hat else R.drawable.ic_check_circle, loading = ui.busy,
                             color = if (o.status == OrderStatus.ACCEPTED) Lg.Orange else Lg.Green) { vm.act() }
+                        // Not accepted yet → it can be rejected from inside (with a confirmation)
+                        if (o.status == OrderStatus.NEW) Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(1.5.dp, Lg.Red, RoundedCornerShape(14.dp))
+                                .let { if (!ui.busy) it.clickableNoRipple { confirmReject = true } else it }.padding(14.dp),
+                            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+                        ) { LgIcon(R.drawable.ic_close, Lg.Red, 20.dp); Spacer(Modifier.width(8.dp)); Text("Buyurtmani rad etish", color = Lg.Red, fontWeight = FontWeight.Bold) }
                     }
                 }
             }

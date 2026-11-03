@@ -221,6 +221,22 @@ class OrderCoordinator @Inject constructor(
         }
     }
 
+    /** "Rad etish": faqat hali qabul qilinmagan buyurtma. Navbat serverdan tasdiq kelgachgina o'zgaradi (oflaynda soxta natija yo'q). */
+    suspend fun reject(orderId: String): ActionResult = acceptLock.withLock {
+        try {
+            val o = repo.reject(orderId)
+            queue.remove(orderId); notifier.cancel(orderId); _changes.emit(o)
+            ActionResult.Done(o)
+        } catch (e: AppError.AlreadyHandled) {
+            queue.remove(orderId)
+            runCatching { repo.order(orderId) }.getOrNull()?.let { _changes.emit(it) }
+            ActionResult.AlreadyHandled
+        } catch (e: AppError) { ActionResult.Failed(e.message ?: "Xatolik") }
+    }
+
+    /** Is the alarm muted? (the detail screen has its own mute button too) */
+    val silenced: kotlinx.coroutines.flow.StateFlow<Boolean> get() = alert.silenced
+
     suspend fun advance(order: Order): ActionResult {
         val next = order.nextAction() ?: return ActionResult.Failed("Keyingi amal yo'q")
         if (next.target == OrderStatus.ACCEPTED) return accept(order.id)

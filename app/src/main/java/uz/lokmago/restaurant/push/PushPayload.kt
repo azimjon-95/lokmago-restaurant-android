@@ -11,6 +11,10 @@ sealed interface PushMessage {
     /** order_updated / order_cancelled: stop ringing for it (re-read the order from the API; the push carries no details). */
     data class OrderChanged(val orderId: String, val cancelled: Boolean) : PushMessage
     data class DeliveryReminder(val orderId: String, val count: Int, val title: String?, val body: String?) : PushMessage
+    /** Kuryer: yaqin atrofda yangi yetkazish (assignmentId — taklif; mijoz ma'lumoti push'da YO'Q). */
+    data class CourierOffer(val assignmentId: String, val title: String, val body: String) : PushMessage
+    /** Kuryer: taklif boshqa kuryer tomonidan olindi / yopildi — bildirishnoma va signal to'xtasin. */
+    data class CourierOfferClosed(val assignmentId: String) : PushMessage
     /** "Push tekshiruvi": no orderId, plain notification. */
     data class Test(val title: String?, val body: String?) : PushMessage
     data object Ignored : PushMessage
@@ -24,6 +28,11 @@ object PushPayload {
     fun parse(data: Map<String, String>): PushMessage {
         val type = data["type"] ?: return PushMessage.Ignored
         if (type == "test") return PushMessage.Test(text(data["title"], MAX_TITLE), text(data["body"], MAX_BODY))
+        if (type == "courier_offer" || type == "courier_offer_closed") {
+            val aid = data["assignmentId"]?.takeIf { OBJECT_ID.matches(it) } ?: return PushMessage.Ignored
+            return if (type == "courier_offer") PushMessage.CourierOffer(aid, text(data["title"], MAX_TITLE) ?: "🛵 Yangi yetkazish", text(data["body"], MAX_BODY) ?: "")
+            else PushMessage.CourierOfferClosed(aid)
+        }
         val id = data["orderId"]?.takeIf { OBJECT_ID.matches(it) } ?: return PushMessage.Ignored
         return when (type) {
             "order_new" -> PushMessage.NewOrder(

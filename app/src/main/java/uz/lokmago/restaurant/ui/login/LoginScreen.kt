@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,7 +60,7 @@ class LoginViewModel @Inject constructor(private val auth: AuthRepository) : Vie
 }
 
 @Composable
-fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
+fun LoginScreen(onSwitchSide: () -> Unit = {}, vm: LoginViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     // rememberSaveable: survives rotation / process death while typing
     var login by rememberSaveable { mutableStateOf(vm.lastLogin) }
@@ -92,6 +93,7 @@ fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
         ui.error?.let { Text(it, color = Lg.Red, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp)) }
         Spacer(Modifier.height(20.dp))
         PrimaryButton("Kirish", loading = ui.loading) { submit() }
+        Text("Kuryer sifatida kirish", color = Lg.GreenText, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable(onClick = onSwitchSide).padding(16.dp))
         Spacer(Modifier.height(14.dp))
         Text("Bir marta kirsangiz, ilova sizni eslab qoladi.", color = Lg.Muted, fontSize = 12.sp)
     }

@@ -16,12 +16,14 @@ import uz.lokmago.restaurant.di.AppScope
 @HiltAndroidApp
 class LokmaGoApp : Application() {
     @Inject lateinit var notifier: Notifier
+    @Inject lateinit var courierNotifier: uz.lokmago.restaurant.courier.CourierNotifier
     @Inject lateinit var session: SessionStore
     @Inject @AppScope lateinit var scope: CoroutineScope
 
     override fun onCreate() {
         super.onCreate()
         notifier.ensureChannels()
+        courierNotifier.ensureChannels()
         // Logged in => the listener runs (screen off, app swiped away, after reboot). Logged out => it stops.
         scope.launch {
             // logged in AND the user did not switch it off in Sozlamalar (FCM keeps working either way)

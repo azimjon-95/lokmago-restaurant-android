@@ -73,11 +73,22 @@ class Notifier @Inject constructor(
             .setOngoing(true).setAutoCancel(false)
             .setOnlyAlertOnce(true)
             .setSilent(silent)                       // the alarm service already rings; avoid double sound
+            .setColor(0xFF00C97E.toInt())            // brand green accent
+            .setLargeIcon(logo())
+            .setTicker(title)
             .setContentIntent(openOrder(orderId))
-            .setFullScreenIntent(openOrder(orderId, fromAlert = true), true)
+            .setFullScreenIntent(openOrder(orderId, fromAlert = true), true)   // locked screen → the alert screen; unlocked in another app → heads-up banner
+            // Two clear actions right on the banner (no need to open the app to accept)
+            .addAction(0, "✅ Qabul qilish", reminderAction(orderId, ReminderActionReceiver.ACTION_ACCEPT_ORDER))
+            .addAction(0, "🍽 Ko'rish", openOrder(orderId))
             .build()
         nm.notify(idFor(orderId), n)
     }
+
+    private var logoBitmap: android.graphics.Bitmap? = null
+    private fun logo(): android.graphics.Bitmap? = logoBitmap ?: runCatching {
+        android.graphics.BitmapFactory.decodeResource(ctx.resources, R.drawable.logo_lgo, android.graphics.BitmapFactory.Options().apply { inSampleSize = 2 })
+    }.getOrNull().also { logoBitmap = it }
 
     fun newOrderText(o: Order) = "#${o.number} — ${o.total.som()}\n${o.itemsCount} ta taom • ${o.payment.label}"
 

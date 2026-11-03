@@ -52,6 +52,7 @@ fun LokmaGoRoot(
     updateBlocking: StateFlow<Boolean>,
     onInstallUpdate: () -> Unit,
     onRetryUpdate: () -> Unit,
+    onSwitchSide: () -> Unit = {},
     vm: AppViewModel = hiltViewModel(),
 ) {
     val ctx = LocalContext.current
@@ -97,7 +98,7 @@ fun LokmaGoRoot(
     Scaffold(containerColor = Lg.Bg, snackbarHost = { SnackbarHost(snack) }, contentWindowInsets = WindowInsets(0)) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             NavHost(nav, startDestination = if (session == null) "login" else "main") {
-                composable("login") { LoginScreen() }
+                composable("login") { LoginScreen(onSwitchSide = onSwitchSide) }
                 composable("main") {
                     MainTabs(
                         queue = queue, connection = connection, notificationsOn = notificationsOn, stoppedCount = stoppedCount,
