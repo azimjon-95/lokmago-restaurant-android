@@ -19,6 +19,7 @@ data class CourierUi(
     val loaded: Boolean = false, val onShift: Boolean = false, val shift: CShiftDto? = null,
     val offers: List<COfferDto> = emptyList(), val active: CActiveDto? = null,
     val history: List<CHistoryDto> = emptyList(), val stats: CStats? = null,
+    val districts: List<CDistrictDto> = emptyList(), val workDistricts: List<String> = emptyList(), val wallet: CWallet? = null,
     val busy: Boolean = false, val message: String? = null,
 )
 
@@ -32,7 +33,15 @@ class CourierViewModel @Inject constructor(
     val me = session.courier
     private var poll: Job? = null
 
-    init { startPolling() }
+    init { startPolling(); loadMe() }
+
+    /** Ish tumanlari + hamyon + tumanlar ro'yxati (bir marta; kirish va o'zgartirishdan keyin). Xato bo'lsa jim — asosiy ish to'xtamaydi. */
+    fun loadMe() = viewModelScope.launch {
+        if (session.courierToken == null) return@launch
+        runCatching { courierCall { api.me() } }.onSuccess { ui.value = ui.value.copy(workDistricts = it.courier.workDistricts, wallet = it.wallet) }
+        if (ui.value.districts.isEmpty()) runCatching { courierCall { api.districts() } }.onSuccess { ui.value = ui.value.copy(districts = it.districts) }
+    }
+    fun saveDistricts(ids: List<String>) = act { val r = courierCall { api.updateMe(CMeReq(ids)) }; ui.value = ui.value.copy(workDistricts = r.workDistricts, message = "Ish tumanlari saqlandi ✓"); load() }
 
     /** Takliflar va faol buyurtma har 5 soniyada (push bilan birga: push — uyg'otadi, bu — ro'yxatni to'g'ri ushlaydi). */
     private fun startPolling() {
@@ -75,6 +84,7 @@ class CourierViewModel @Inject constructor(
             val r = courierCall { api.login(CLoginReq(login.trim(), password)) }
             session.saveCourier(CourierSession(r.token, r.courier.name.ifBlank { "Kuryer" }, r.courier.login.ifBlank { login.trim() }))
             registrar.ensureRegistered()
+            loadMe()
             onDone(null)
         } catch (e: AppError) { onDone(e.message) }
     }

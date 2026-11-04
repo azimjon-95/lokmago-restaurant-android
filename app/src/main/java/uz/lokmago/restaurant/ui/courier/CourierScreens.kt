@@ -95,6 +95,7 @@ private fun WorkTab(vm: CourierViewModel, ui: CourierUi) {
                 )
             }
         }
+        if (ui.districts.isNotEmpty()) item { DistrictsCard(ui.districts, ui.workDistricts, ui.busy, onSave = vm::saveDistricts) }
         if (denied) item { Text("Joylashuv ruxsatisiz smena boshlab bo'lmaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → Ilovalar → Joylashuv → «Ilova ishlatilayotganda»ni yoqing.", color = Lg.Orange, fontSize = 12.sp) }
 
         val a = ui.active
@@ -129,6 +130,43 @@ private fun OfferCard(o: COfferDto, busy: Boolean, onAccept: () -> Unit) = Secti
     }
     Spacer(Modifier.height(12.dp))
     PrimaryButton("Qabul qilish", icon = R.drawable.ic_check, loading = busy, onClick = onAccept)
+}
+
+/** «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida). */
+@Composable
+private fun DistrictsCard(all: List<CDistrictDto>, selected: List<String>, busy: Boolean, onSave: (List<String>) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    SectionCard(bg = Lg.CardStat) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Ish tumanlari", color = Lg.TextSecondary, fontSize = 12.sp)
+                Text(
+                    if (selected.isEmpty()) "Tanlanmagan — buyurtma ko'rmaysiz" else all.filter { it.id in selected }.joinToString(", ") { it.uz.removeSuffix(" tumani") },
+                    color = if (selected.isEmpty()) Lg.Orange else Lg.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Text("O'zgartirish", color = Lg.Orange, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = true }.padding(8.dp))
+        }
+    }
+    if (open) {
+        var pick by remember(selected) { mutableStateOf(selected.toSet()) }
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text("Ish tumanlari") },
+            text = {
+                LazyColumn {
+                    items(all, key = { it.id }) { d ->
+                        Row(Modifier.fillMaxWidth().clickable { pick = if (d.id in pick) pick - d.id else pick + d.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(d.id in pick, { checked -> pick = if (checked) pick + d.id else pick - d.id }, colors = CheckboxDefaults.colors(checkedColor = Lg.Green, uncheckedColor = Lg.Muted))
+                            Text(d.uz, fontSize = 15.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onSave(all.map { it.id }.filter { it in pick }); open = false }, enabled = !busy) { Text("Saqlash") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Bekor") } },
+        )
+    }
 }
 
 @Composable

@@ -133,6 +133,48 @@ struct CourierTabBar: View {
 private func km(_ m: Int?) -> String { guard let m else { return "" }; return m < 950 ? "\(m / 10 * 10) m" : String(format: "%.1f km", Double(m) / 1000) }
 private func minutes(_ n: Int) -> String { n >= 60 ? "\(n / 60) soat \(n % 60) daq" : "\(n) daq" }
 
+/// «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida).
+private struct DistrictsCard: View {
+    @EnvironmentObject private var courier: CourierModel
+    @State private var open = false
+    @State private var pick: Set<String> = []
+    private var summary: String {
+        courier.workDistricts.isEmpty ? "Tanlanmagan — buyurtma ko'rmaysiz"
+            : courier.districts.filter { courier.workDistricts.contains($0.id) }.map { ($0.uz ?? $0.id).replacingOccurrences(of: " tumani", with: "") }.joined(separator: ", ")
+    }
+    var body: some View {
+        if !courier.districts.isEmpty {
+            SectionCard(bg: Dt.cardStat) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ish tumanlari").font(.system(size: 12)).foregroundStyle(Dt.textSecondary)
+                        Text(summary).font(.system(size: 14, weight: .semibold)).foregroundStyle(courier.workDistricts.isEmpty ? Dt.orange : Dt.text)
+                    }
+                    Spacer()
+                    Button { pick = Set(courier.workDistricts); open = true } label: { Text("O'zgartirish").font(.system(size: 13, weight: .bold)).foregroundStyle(Dt.orange) }.buttonStyle(.plain)
+                }
+            }
+            .sheet(isPresented: $open) {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("Bekor") { open = false }.foregroundStyle(Dt.textMuted)
+                        Spacer()
+                        Text("Ish tumanlari").font(.system(size: 17, weight: .bold))
+                        Spacer()
+                        Button("Saqlash") { let ids = courier.districts.map(\.id).filter { pick.contains($0) }; open = false; Task { await courier.saveDistricts(ids) } }
+                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Dt.orange)
+                    }.padding(16)
+                    List(courier.districts) { d in
+                        Button { if pick.contains(d.id) { pick.remove(d.id) } else { pick.insert(d.id) } } label: {
+                            HStack { Text(d.uz ?? d.id).foregroundStyle(Dt.text); Spacer(); if pick.contains(d.id) { Image(systemName: "checkmark").foregroundStyle(Dt.green) } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct WorkTab: View {
     @EnvironmentObject private var courier: CourierModel
     var body: some View {
@@ -165,6 +207,7 @@ struct WorkTab: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(courier.active != nil ? Dt.line : Dt.red, lineWidth: 1.5))
                     }.buttonStyle(.plain).disabled(courier.active != nil || courier.busy)
                 }
+                DistrictsCard()
                 if courier.locationDenied { Text("Joylashuv ruxsatisiz smena ishlamaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → LGO Business → Joylashuv → «Ilova ishlatilganda»").font(.system(size: 12)).foregroundStyle(Dt.orange) }
 
                 if let a = courier.active { ActiveCard(a: a) }

@@ -30,6 +30,12 @@ import uz.lokmago.restaurant.data.remote.dto.OkDto
     val earningSom: Long = 0, val freeDelivery: Boolean = false,
 )
 @Serializable data class CPickupRes(val ok: Boolean = true, val already: Boolean = false, val active: CActiveDto? = null)
+@Serializable data class CDistrictDto(val id: String = "", val uz: String = "", val group: String = "")
+@Serializable data class CDistrictsRes(val districts: List<CDistrictDto> = emptyList())
+@Serializable data class CMeCourier(val workDistricts: List<String> = emptyList())
+@Serializable data class CWallet(val balanceSom: Double = 0.0, val openCashSom: Double = 0.0, val debtLimitSom: Double = 0.0, val cashRoomSom: Double = 0.0)
+@Serializable data class CMeRes(val courier: CMeCourier = CMeCourier(), val wallet: CWallet? = null)
+@Serializable data class CMeReq(val workDistricts: List<String> = emptyList())
 @Serializable data class CAcceptRes(val ok: Boolean = true, val active: CActiveDto? = null)
 @Serializable data class CActiveRes(val active: CActiveDto? = null)
 @Serializable data class CHistoryDto(
@@ -45,6 +51,10 @@ import uz.lokmago.restaurant.data.remote.dto.OkDto
 
 interface CourierApi {
     @POST("courier-app/login") suspend fun login(@Body b: CLoginReq): CLoginRes
+    /** Tumanlar ro'yxati (ochiq) va kuryerning ish tumanlari: buyurtmalar shu tumanlardan (yoki biriktirilgan restoranlardan) ko'rinadi. */
+    @GET("districts") suspend fun districts(): CDistrictsRes
+    @GET("courier-app/me") suspend fun me(): CMeRes
+    @PATCH("courier-app/me") suspend fun updateMe(@Body b: CMeReq): CMeReq
     @GET("courier-app/shift") suspend fun shift(): CShiftState
     @POST("courier-app/shift/start") suspend fun startShift(): CShiftState
     @POST("courier-app/shift/end") suspend fun endShift(): CShiftState

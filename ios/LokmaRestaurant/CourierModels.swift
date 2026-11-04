@@ -22,6 +22,12 @@ struct CActive: Decodable, Identifiable {
     let kind: String?; let stage: String?; let pickedUp: Bool?; let canPickup: Bool?; let canDeliver: Bool?; let freeDelivery: Bool?
 }
 struct CPickupRes: Decodable { let ok: Bool?; let already: Bool?; let active: CActive? }
+struct CDistrict: Decodable, Identifiable { let id: String; let uz: String?; let group: String? }
+struct CDistrictsRes: Decodable { let districts: [CDistrict]? }
+struct CMeCourier: Decodable { let workDistricts: [String]? }
+struct CMeRes: Decodable { let courier: CMeCourier? }
+struct CMeUpd: Decodable { let workDistricts: [String]? }
+struct CMeReq: Encodable { let workDistricts: [String] }
 struct CAcceptRes: Decodable { let active: CActive? }
 struct CActiveRes: Decodable { let active: CActive? }
 struct CHistory: Decodable, Identifiable { let id: String; let orderCode: String?; let restaurantName: String?; let addressLabel: String?; let deliveryFee: Int64?; let deliveredAt: String?; let minutes: Int? }
