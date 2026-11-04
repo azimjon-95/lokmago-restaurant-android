@@ -45,7 +45,13 @@ class CourierLocationService : Service() {
     private var job: Job? = null
     private var lm: LocationManager? = null
     @Volatile private var last: Location? = null
-    private val listener = LocationListener { loc -> if (better(loc, last)) last = loc }
+    // NOT a lambda: on Android 8–10 LocationListener has 3 more ABSTRACT methods (default only since API 30) → a SAM lambda crashes with AbstractMethodError
+    private val listener = object : LocationListener {
+        override fun onLocationChanged(loc: Location) { if (better(loc, last)) last = loc }
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
+        @Deprecated("API < 29") override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -92,7 +98,8 @@ class CourierLocationService : Service() {
     }
 
     companion object {
-        fun start(ctx: Context) { androidx.core.content.ContextCompat.startForegroundService(ctx, Intent(ctx, CourierLocationService::class.java)) }
+        /** Never throws: starting a foreground service from the background (Android 12+) is refused by the system — the next poll tick tries again. */
+        fun start(ctx: Context) { runCatching { androidx.core.content.ContextCompat.startForegroundService(ctx, Intent(ctx, CourierLocationService::class.java)) } }
         fun stop(ctx: Context) { ctx.stopService(Intent(ctx, CourierLocationService::class.java)) }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,7 @@ import uz.lokmago.restaurant.util.som
 /** Kuryer tomonining ildizi: 4 bo'lim (Ish · Tarix · Hisobot · Profil), pastda suzuvchi menyu (restoran bilan bir xil uslub). */
 @Composable
 fun CourierRoot(vm: CourierViewModel = hiltViewModel()) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableStateOf(0) }
     val ui by vm.ui.collectAsStateWithLifecycle()
     LaunchedEffect(tab) { if (tab == 1) vm.loadHistory(); if (tab == 2) vm.loadStats() }
     Column(Modifier.fillMaxSize().background(Lg.Bg).statusBarsPadding()) {
