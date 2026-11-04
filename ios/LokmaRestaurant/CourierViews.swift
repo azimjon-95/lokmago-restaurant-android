@@ -133,6 +133,48 @@ struct CourierTabBar: View {
 private func km(_ m: Int?) -> String { guard let m else { return "" }; return m < 950 ? "\(m / 10 * 10) m" : String(format: "%.1f km", Double(m) / 1000) }
 private func minutes(_ n: Int) -> String { n >= 60 ? "\(n / 60) soat \(n % 60) daq" : "\(n) daq" }
 
+/// «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida).
+private struct DistrictsCard: View {
+    @EnvironmentObject private var courier: CourierModel
+    @State private var open = false
+    @State private var pick: Set<String> = []
+    private var summary: String {
+        courier.workDistricts.isEmpty ? "Tanlanmagan — buyurtma ko'rmaysiz"
+            : courier.districts.filter { courier.workDistricts.contains($0.id) }.map { ($0.uz ?? $0.id).replacingOccurrences(of: " tumani", with: "") }.joined(separator: ", ")
+    }
+    var body: some View {
+        if !courier.districts.isEmpty {
+            SectionCard(bg: Dt.cardStat) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ish tumanlari").font(.system(size: 12)).foregroundStyle(Dt.textSecondary)
+                        Text(summary).font(.system(size: 14, weight: .semibold)).foregroundStyle(courier.workDistricts.isEmpty ? Dt.orange : Dt.text)
+                    }
+                    Spacer()
+                    Button { pick = Set(courier.workDistricts); open = true } label: { Text("O'zgartirish").font(.system(size: 13, weight: .bold)).foregroundStyle(Dt.orange) }.buttonStyle(.plain)
+                }
+            }
+            .sheet(isPresented: $open) {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("Bekor") { open = false }.foregroundStyle(Dt.textMuted)
+                        Spacer()
+                        Text("Ish tumanlari").font(.system(size: 17, weight: .bold))
+                        Spacer()
+                        Button("Saqlash") { let ids = courier.districts.map(\.id).filter { pick.contains($0) }; open = false; Task { await courier.saveDistricts(ids) } }
+                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Dt.orange)
+                    }.padding(16)
+                    List(courier.districts) { d in
+                        Button { if pick.contains(d.id) { pick.remove(d.id) } else { pick.insert(d.id) } } label: {
+                            HStack { Text(d.uz ?? d.id).foregroundStyle(Dt.text); Spacer(); if pick.contains(d.id) { Image(systemName: "checkmark").foregroundStyle(Dt.green) } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct WorkTab: View {
     @EnvironmentObject private var courier: CourierModel
     var body: some View {
@@ -165,6 +207,7 @@ struct WorkTab: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(courier.active != nil ? Dt.line : Dt.red, lineWidth: 1.5))
                     }.buttonStyle(.plain).disabled(courier.active != nil || courier.busy)
                 }
+                DistrictsCard()
                 if courier.locationDenied { Text("Joylashuv ruxsatisiz smena ishlamaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → LGO Business → Joylashuv → «Ilova ishlatilganda»").font(.system(size: 12)).foregroundStyle(Dt.orange) }
 
                 if let a = courier.active { ActiveCard(a: a) }
@@ -202,7 +245,7 @@ struct OfferCard: View {
             if let l = o.addressLabel, !l.isEmpty { Text("📍 \(l)").font(.system(size: 13)).foregroundStyle(Dt.textSecondary).padding(.top, 8) }
             if let s = o.itemsSummary, !s.isEmpty { Text(s).font(.system(size: 12)).foregroundStyle(Dt.textMuted) }
             HStack(spacing: 10) {
-                Text("Haq: \(som(o.deliveryFee ?? 0))").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange)
+                Text("Haq: \(som(o.deliveryFee ?? 0))\(o.freeDelivery == true ? " • mijozga tekin" : "")").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange)
                 Text(o.isPaid == true ? "To'langan" : "Olinadi: \(som(o.collectAmount ?? 0))").font(.system(size: 13)).foregroundStyle(o.isPaid == true ? Dt.greenText : Dt.text)
             }.padding(.top, 8)
             PrimaryButton(title: "Qabul qilish", icon: "ic_check", loading: courier.busy) { Task { await courier.accept(o.id) } }.padding(.top, 12)
@@ -227,6 +270,9 @@ struct ActiveCard: View {
     var body: some View {
         SectionCard(bg: Dt.cardStat) {
             Text("FAOL BUYURTMA  #\(a.orderCode ?? "")").font(.system(size: 12, weight: .heavy)).foregroundStyle(Dt.orange).tracking(1)
+            // Bosqich: restoranga boryapman (taom hali olinmagan) / taom qo'lida, mijozga boryapman
+            if a.canPickup == true { Text("📍 Restoranga boring va taomni oling").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange).padding(.top, 6) }
+            else if a.stage == "to_customer" { Text("🛵 Taom qo'lingizda — mijozga olib boring").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.greenText).padding(.top, 6) }
             Text("1. Restoran").font(.system(size: 12)).foregroundStyle(Dt.textSecondary).padding(.top, 10)
             Text(a.restaurantName ?? "").font(.system(size: 17, weight: .bold)); Text(a.restaurantAddress ?? "").font(.system(size: 13)).foregroundStyle(Dt.textMuted)
             HStack(spacing: 8) { chip("Xaritada", "ic_map") { open(a.restaurantLat, a.restaurantLng, a.restaurantName ?? "Restoran") }
@@ -239,8 +285,10 @@ struct ActiveCard: View {
             ForEach(Array((a.items ?? []).enumerated()), id: \.offset) { _, i in Text("• \(i.quantity ?? 0)× \(i.name ?? "")").font(.system(size: 14)) }
             Text(a.isPaid == true ? "✅ To'langan — mijozdan pul olinmaydi" : "💵 Mijozdan olinadi: \(som(a.collectAmount ?? 0))").font(.system(size: 15, weight: .bold))
                 .foregroundStyle(a.isPaid == true ? Dt.greenText : Dt.text).padding(.top, 12)
-            Text("Yetkazish haqi: \(som(a.deliveryFee ?? 0))").font(.system(size: 12)).foregroundStyle(Dt.textMuted)
-            PrimaryButton(title: "Topshirdim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.deliver() } }.padding(.top, 14)
+            Text(a.freeDelivery == true ? "Sizning haqingiz: \(som(a.deliveryFee ?? 0)) (mijozga yetkazish tekin)" : "Sizning haqingiz: \(som(a.deliveryFee ?? 0))").font(.system(size: 12)).foregroundStyle(Dt.textMuted)
+            // Ikki qadam: avval «Taomni oldim», keyin «Topshirdim» (havola oqimida faqat «Topshirdim»)
+            if a.canPickup == true { PrimaryButton(title: "Taomni oldim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.pickup() } }.padding(.top, 14) }
+            else { PrimaryButton(title: "Topshirdim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.deliver() } }.padding(.top, 14) }
         }
     }
 }

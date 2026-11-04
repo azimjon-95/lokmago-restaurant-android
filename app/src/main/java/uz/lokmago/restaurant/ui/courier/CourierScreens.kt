@@ -95,10 +95,11 @@ private fun WorkTab(vm: CourierViewModel, ui: CourierUi) {
                 )
             }
         }
+        if (ui.districts.isNotEmpty()) item { DistrictsCard(ui.districts, ui.workDistricts, ui.busy, onSave = vm::saveDistricts) }
         if (denied) item { Text("Joylashuv ruxsatisiz smena boshlab bo'lmaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → Ilovalar → Joylashuv → «Ilova ishlatilayotganda»ni yoqing.", color = Lg.Orange, fontSize = 12.sp) }
 
         val a = ui.active
-        if (a != null) item { ActiveCard(a, ui.busy, onDeliver = vm::deliver) }
+        if (a != null) item { ActiveCard(a, ui.busy, onPickup = vm::pickup, onDeliver = vm::deliver) }
         else if (ui.onShift) {
             item { Text("Yaqin atrofdagi buyurtmalar", color = Lg.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
             if (ui.offers.isEmpty()) item { EmptyState(R.drawable.ic_delivery, "Hozircha buyurtma yo'q", "Yangi yetkazish chiqqanda bildirishnoma va ovoz bilan xabar beramiz") }
@@ -124,20 +125,60 @@ private fun OfferCard(o: COfferDto, busy: Boolean, onAccept: () -> Unit) = Secti
     if (o.itemsSummary.isNotBlank()) Text(o.itemsSummary, color = Lg.Muted, fontSize = 12.sp)
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("Haq: ${o.deliveryFee.som()}", color = Lg.Orange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text("Haq: ${o.deliveryFee.som()}${if (o.freeDelivery) " • mijozga tekin" else ""}", color = Lg.Orange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Text(if (o.isPaid) "To'langan" else "Olinadi: ${o.collectAmount.som()}", color = if (o.isPaid) Lg.GreenText else Lg.Text, fontSize = 13.sp)
     }
     Spacer(Modifier.height(12.dp))
     PrimaryButton("Qabul qilish", icon = R.drawable.ic_check, loading = busy, onClick = onAccept)
 }
 
+/** «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida). */
 @Composable
-private fun ActiveCard(a: CActiveDto, busy: Boolean, onDeliver: () -> Unit) {
+private fun DistrictsCard(all: List<CDistrictDto>, selected: List<String>, busy: Boolean, onSave: (List<String>) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    SectionCard(bg = Lg.CardStat) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Ish tumanlari", color = Lg.TextSecondary, fontSize = 12.sp)
+                Text(
+                    if (selected.isEmpty()) "Tanlanmagan — buyurtma ko'rmaysiz" else all.filter { it.id in selected }.joinToString(", ") { it.uz.removeSuffix(" tumani") },
+                    color = if (selected.isEmpty()) Lg.Orange else Lg.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Text("O'zgartirish", color = Lg.Orange, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = true }.padding(8.dp))
+        }
+    }
+    if (open) {
+        var pick by remember(selected) { mutableStateOf(selected.toSet()) }
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text("Ish tumanlari") },
+            text = {
+                LazyColumn {
+                    items(all, key = { it.id }) { d ->
+                        Row(Modifier.fillMaxWidth().clickable { pick = if (d.id in pick) pick - d.id else pick + d.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(d.id in pick, { checked -> pick = if (checked) pick + d.id else pick - d.id }, colors = CheckboxDefaults.colors(checkedColor = Lg.Green, uncheckedColor = Lg.Muted))
+                            Text(d.uz, fontSize = 15.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onSave(all.map { it.id }.filter { it in pick }); open = false }, enabled = !busy) { Text("Saqlash") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Bekor") } },
+        )
+    }
+}
+
+@Composable
+private fun ActiveCard(a: CActiveDto, busy: Boolean, onPickup: () -> Unit, onDeliver: () -> Unit) {
     val ctx = LocalContext.current
     fun nav(lat: Double?, lng: Double?, label: String) { if (lat != null && lng != null) runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(label)})"))) } }
     fun call(phone: String) { if (phone.isNotBlank()) runCatching { ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } }
     SectionCard(bg = Lg.CardStat) {
         Text("FAOL BUYURTMA  #${a.orderCode}", color = Lg.Orange, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        // Bosqich: restoranga boryapman (taom hali olinmagan) / taom qo'lida, mijozga boryapman
+        if (a.canPickup) Text("📍 Restoranga boring va taomni oling", color = Lg.Orange, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+        else if (a.stage == "to_customer") Text("🛵 Taom qo'lingizda — mijozga olib boring", color = Lg.GreenText, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         Spacer(Modifier.height(10.dp))
         Text("1. Restoran", color = Lg.TextSecondary, fontSize = 12.sp)
         Text(a.restaurantName, color = Lg.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold); Text(a.restaurantAddress, color = Lg.Muted, fontSize = 13.sp)
@@ -158,9 +199,11 @@ private fun ActiveCard(a: CActiveDto, busy: Boolean, onDeliver: () -> Unit) {
         if (a.note.isNotBlank()) Text("Izoh: ${a.note}", color = Lg.Orange, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
         Spacer(Modifier.height(12.dp))
         Text(if (a.isPaid) "✅ To'langan — mijozdan pul olinmaydi" else "💵 Mijozdan olinadi: ${a.collectAmount.som()}", color = if (a.isPaid) Lg.GreenText else Lg.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        Text("Yetkazish haqi: ${a.deliveryFee.som()}", color = Lg.Muted, fontSize = 12.sp)
+        Text(if (a.freeDelivery) "Sizning haqingiz: ${a.deliveryFee.som()} (mijozga yetkazish tekin)" else "Sizning haqingiz: ${a.deliveryFee.som()}", color = Lg.Muted, fontSize = 12.sp)
         Spacer(Modifier.height(14.dp))
-        PrimaryButton("Topshirdim", icon = R.drawable.ic_check_circle, loading = busy, onClick = onDeliver)
+        // Ikki qadam: avval «Taomni oldim», keyin «Topshirdim» (havola oqimida faqat «Topshirdim»)
+        if (a.canPickup) PrimaryButton("Taomni oldim", icon = R.drawable.ic_check_circle, loading = busy, onClick = onPickup)
+        else PrimaryButton("Topshirdim", icon = R.drawable.ic_check_circle, loading = busy, onClick = onDeliver)
     }
 }
 

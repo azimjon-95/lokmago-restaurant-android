@@ -14,6 +14,9 @@ import CoreLocation
     @Published private(set) var shift: CShift?
     @Published private(set) var offers: [COffer] = []
     @Published private(set) var active: CActive?
+    @Published private(set) var districts: [CDistrict] = []
+    @Published private(set) var workDistricts: [String] = []
+    private var meLoaded = false
     @Published private(set) var history: [CHistory] = []
     @Published private(set) var stats: CStats?
     @Published var busy = false
@@ -40,7 +43,7 @@ import CoreLocation
         }
         return error is URLError ? "Internet yo'q. Ulanishni tekshiring." : error.localizedDescription
     }
-    private func signOutLocally() { KeychainStore.saveCourier(nil); token = nil; poll?.cancel(); CourierLocation.shared.stop(); onShift = false; offers = []; active = nil }
+    private func signOutLocally() { KeychainStore.saveCourier(nil); token = nil; poll?.cancel(); CourierLocation.shared.stop(); onShift = false; offers = []; active = nil; meLoaded = false; workDistricts = [] }
 
     // ---- kirish / chiqish ----
     func signIn(login: String, password: String) async -> String? {
@@ -80,6 +83,7 @@ import CoreLocation
             if s.activeAssignmentId != nil { let a: CActiveRes = try await send("courier-app/active"); active = a.active } else { active = nil }
             offers = (onShift && active == nil) ? try await send("courier-app/offers") : []
             loaded = true
+            if !meLoaded { meLoaded = true; await loadMe() }
             if onShift { startLocation() } else { CourierLocation.shared.stop() }          // joylashuv SERVER holatiga ergashadi (ilova o'ldirilgan bo'lsa ham)
         } catch { if let e = error as? APIError, case .http(401, _) = e { signOutLocally() }; loaded = true }
     }
@@ -88,6 +92,15 @@ import CoreLocation
         busy = true; message = nil
         do { try await block() } catch { message = text(error) }
         busy = false
+    }
+
+    /// Ish tumanlari + tumanlar ro'yxati (sessiyada bir marta). Xato bo'lsa jim — asosiy ish to'xtamaydi.
+    func loadMe() async {
+        if let r: CMeRes = try? await send("courier-app/me") { workDistricts = r.courier?.workDistricts ?? [] }
+        if districts.isEmpty, let d: CDistrictsRes = try? await send("districts") { districts = d.districts ?? [] }
+    }
+    func saveDistricts(_ ids: [String]) async {
+        await act { let r: CMeUpd = try await send("courier-app/me", method: "PATCH", body: CMeReq(workDistricts: ids)); workDistricts = r.workDistricts ?? ids; message = "Ish tumanlari saqlandi ✓"; await refresh() }
     }
 
     func beginShift() async {
@@ -99,6 +112,8 @@ import CoreLocation
     }
     func endShift() async { await act { let _: CShiftState = try await send("courier-app/shift/end", method: "POST"); CourierLocation.shared.stop(); await refresh() } }
     func accept(_ id: String) async { await act { let r: CAcceptRes = try await send("courier-app/offers/\(id)/accept", method: "POST"); active = r.active; await refresh() } }
+    /// «Taomni oldim» — restorandan oldi; keyingi qadam «Topshirdim».
+    func pickup() async { await act { let r: CPickupRes = try await send("courier-app/active/pickup", method: "POST"); if let a = r.active { active = a }; message = "Taom olindi ✓ — mijozga boring"; await refresh() } }
     func deliver() async { await act { let _: OkResponse = try await send("courier-app/active/deliver", method: "POST"); message = "Buyurtma topshirildi ✓"; await refresh(); await loadStats() } }
     func loadHistory() async { if let h: [CHistory] = try? await send("courier-app/history?limit=50") { history = h } }
     func loadStats() async { if let s: CStats = try? await send("courier-app/stats") { stats = s } }
