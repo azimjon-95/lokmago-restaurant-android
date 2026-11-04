@@ -1,11 +1,27 @@
 name: Android CI
+# Fast gates first (seconds, no SDK): static checks + pure-Kotlin tests. Then the real Gradle build/test, and an iOS build on macOS.
 on:
   push: { branches: [main] }
   pull_request:
 permissions:
   contents: read
 jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Static checks (imports, resources, tokens, duplicates, Swift members)
+        run: |
+          python3 tools/static-check/kt_check.py
+          python3 tools/static-check/kt_imports.py
+          python3 tools/static-check/sw_check.py
+      - name: Pure-Kotlin unit tests (no Android SDK)
+        run: tools/kotlin-check/run.sh
+
   build:
+    needs: static
     runs-on: ubuntu-latest
     env:
       # Debug builds talk to lakmago-server (default https://apilokma.poppolizol.uz/api/). No secrets needed.
@@ -22,3 +38,15 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with: { name: app-debug, path: app/build/outputs/apk/debug/*.apk, retention-days: 7 }
+
+  ios:
+    # Real Swift compile (simulator, unsigned). Non-blocking until the first green run: the project was edited without Xcode.
+    needs: static
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild -project ios/LokmaRestaurant.xcodeproj -target LokmaRestaurant -sdk iphonesimulator -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 60
