@@ -5,6 +5,7 @@ struct OrderDetailScreen: View {
     @EnvironmentObject private var menu: MenuStore
     @Environment(\.dismiss) private var dismiss
     @State private var lightbox: LightboxItem?
+    @State private var confirmReject = false
     let orderId: String
     private var order: RestaurantOrder? { model.orders.first { $0.id == orderId } }
 
@@ -21,8 +22,25 @@ struct OrderDetailScreen: View {
                 ScrollView { content(o).padding(.horizontal, Dt.spaceScreen).padding(.bottom, 8) }
                 if let a = o.nextAction {
                     let accepted = o.status.lowercased() == "accepted"
-                    PrimaryButton(title: a.title, icon: accepted ? "ic_chef_hat" : "ic_check_circle", color: accepted ? Dt.orange : Dt.green, loading: model.busy) {
-                        Task { await model.update(o, to: a.status) }
+                    let pending = o.status.lowercased() == "pending"
+                    VStack(spacing: 10) {
+                        // A pending order may still be ringing: the mute button is right here too
+                        if pending && !model.silenced {
+                            Button { model.silence() } label: {
+                                HStack(spacing: 8) { LgIcon(name: "ic_volume_off", color: Dt.red, size: 22); Text("Ovozni o'chirish").font(.system(size: 15, weight: .bold)).foregroundStyle(Dt.red) }
+                                    .frame(maxWidth: .infinity).padding(14).background(Dt.red.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
+                            }.buttonStyle(.plain)
+                        }
+                        PrimaryButton(title: a.title, icon: accepted ? "ic_chef_hat" : "ic_check_circle", color: accepted ? Dt.orange : Dt.green, loading: model.busy) {
+                            Task { await model.update(o, to: a.status) }
+                        }
+                        // Not accepted yet → it can be rejected from inside (with a confirmation)
+                        if pending {
+                            Button { confirmReject = true } label: {
+                                HStack(spacing: 8) { LgIcon(name: "ic_close", color: Dt.red, size: 20); Text("Buyurtmani rad etish").font(.system(size: 15, weight: .bold)).foregroundStyle(Dt.red) }
+                                    .frame(maxWidth: .infinity).padding(14).overlay(RoundedRectangle(cornerRadius: 14).stroke(Dt.red, lineWidth: 1.5))
+                            }.buttonStyle(.plain).disabled(model.busy)
+                        }
                     }.padding(16)
                 }
             } else {
@@ -33,6 +51,10 @@ struct OrderDetailScreen: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(item: $lightbox) { ImageLightbox(url: $0.url) }
+        .alert("Buyurtma rad etilsinmi?", isPresented: $confirmReject) {
+            Button("Rad etish", role: .destructive) { if let o = order { Task { await model.update(o, to: "cancelled") } } }
+            Button("Yo'q", role: .cancel) {}
+        } message: { Text("Buyurtma bekor qilinadi va mijozga xabar boradi. Bu amalni qaytarib bo'lmaydi.") }
     }
 
     @ViewBuilder private func content(_ o: RestaurantOrder) -> some View {

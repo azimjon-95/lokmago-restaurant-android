@@ -276,6 +276,7 @@ enum Prefs {
         UserDefaults.standard.set(hex, forKey: "apns-token")
         UserDefaults.standard.removeObject(forKey: "apns-error")
         registerStoredPushToken()
+        CourierModel.shared?.registerPush(hex)          // the same phone may be used on the courier side too (no-op without a courier session)
     }
     private func registerStoredPushToken() {
         guard isSignedIn, let hex = UserDefaults.standard.string(forKey: "apns-token") else { return }

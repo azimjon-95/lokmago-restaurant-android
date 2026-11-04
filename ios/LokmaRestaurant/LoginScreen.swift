@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LoginScreen: View {
+    var onSwitchSide: () -> Void = {}
     @EnvironmentObject private var model: AppModel
     @State private var login = UserDefaults.standard.string(forKey: "last-login") ?? ""   // only the login NAME is remembered
     @State private var password = ""
@@ -37,6 +38,7 @@ struct LoginScreen: View {
                     Text(error).font(.system(size: 13)).foregroundStyle(Dt.red).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 PrimaryButton(title: "Kirish", loading: model.isLoading, enabled: !login.isEmpty && !password.isEmpty, action: submit).padding(.top, 8)
+            Button("Kuryer sifatida kirish", action: onSwitchSide).font(.system(size: 14, weight: .semibold)).foregroundStyle(Dt.greenText).padding(16)
                 Text("Bir marta kirsangiz, ilova sizni eslab qoladi.").font(.system(size: 12)).foregroundStyle(Dt.textMuted).padding(.top, 6)
             }
             .padding(.horizontal, 28).padding(.top, 28)

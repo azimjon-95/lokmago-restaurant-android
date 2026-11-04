@@ -54,38 +54,38 @@ struct AlertScreen: View {
             }
             Spacer()
 
-            LgIcon(name: model.silenced ? "ic_volume_off" : "ic_volume", color: Dt.red, size: 30)
-                .frame(width: 64, height: 64).background(Dt.red.opacity(0.22), in: Circle())
-            Text(model.hasInternet ? (model.silenced ? "Signal o'chirilgan. Buyurtma hali qabul qilinmagan." : "Buyurtmani qabul qilmaguncha signal davom etadi…") : "Internet yo'q — qabul qilish uchun ulanish kerak")
-                .font(.system(size: 13)).foregroundStyle(model.hasInternet ? Dt.textMuted : Dt.orange).multilineTextAlignment(.center).padding(.top, 10)
+            // The speaker button IS the mute control (tap = silence; the order stays pending). The old red "Signalni to'xtatish" button is gone.
+            Button { model.silence() } label: {
+                LgIcon(name: model.silenced ? "ic_volume_off" : "ic_volume", color: model.silenced ? Dt.textMuted : Dt.red, size: 34)
+                    .frame(width: 72, height: 72).background(model.silenced ? Dt.cardHigh : Dt.red.opacity(0.22), in: Circle())
+            }.buttonStyle(.plain).disabled(model.silenced).accessibilityLabel(Text("Ovozni o'chirish"))
+            Text(model.hasInternet ? (model.silenced ? "Ovoz o'chirildi. Buyurtma hali qabul qilinmagan." : "Ovozni o'chirish uchun bosing. Buyurtmani qabul qilmaguncha signal davom etadi.") : "Internet yo'q — qabul qilish uchun ulanish kerak")
+                .font(.system(size: 13)).foregroundStyle(model.hasInternet ? Dt.textMuted : Dt.orange).multilineTextAlignment(.center).padding(.top, 8)
 
-            HStack(alignment: .bottom, spacing: 14) {
-                Button { model.silence() } label: {
-                    VStack(spacing: 6) {
-                        LgIcon(name: "ic_close", color: Dt.onAccent, size: 30).frame(width: 64, height: 64)
-                            .background(Dt.red.opacity(model.silenced ? 0.35 : 1), in: Circle())
-                        Text("Signalni to'xtatish").font(.system(size: 12)).multilineTextAlignment(.center)
-                    }.frame(width: 96)
-                }.buttonStyle(.plain).disabled(model.silenced)
-
-                Button { Task { await model.update(head, to: "accepted") } } label: {
-                    Group {
-                        if model.busy { ProgressView().tint(Dt.onAccent) }
-                        else {
-                            VStack(spacing: 6) {
-                                LgIcon(name: "ic_check_circle", color: Dt.onAccent, size: 36)
-                                Text("Qabul qilish").font(.system(size: 17, weight: .heavy)).foregroundStyle(Dt.onAccent)
-                            }
+            Button { Task { await model.update(head, to: "accepted") } } label: {
+                Group {
+                    if model.busy { ProgressView().tint(Dt.onAccent) }
+                    else {
+                        HStack(spacing: 12) {
+                            LgIcon(name: "ic_check_circle", color: Dt.onAccent, size: 36)
+                            Text("Qabul qilish").font(.system(size: 20, weight: .heavy)).foregroundStyle(Dt.onAccent)
                         }
                     }
-                    .frame(maxWidth: .infinity).frame(height: 104)
-                    .background(LinearGradient(colors: [Dt.green, Dt.greenEnd], startPoint: .top, endPoint: .bottom).opacity(model.hasInternet && !model.busy ? 1 : 0.4),
-                                in: RoundedRectangle(cornerRadius: 28))
-                }.buttonStyle(.plain).disabled(!model.hasInternet || model.busy)
-            }.padding(.top, 14)
+                }
+                .frame(maxWidth: .infinity).frame(height: 96)
+                .background(LinearGradient(colors: [Dt.green, Dt.greenEnd], startPoint: .top, endPoint: .bottom).opacity(model.hasInternet && !model.busy ? 1 : 0.4), in: RoundedRectangle(cornerRadius: 28))
+            }.buttonStyle(.plain).disabled(!model.hasInternet || model.busy).padding(.top, 14)
 
-            Button("Tarkibini ko'rish") { openOrder(head.id) }
-                .font(.system(size: 14, weight: .semibold)).foregroundStyle(Dt.green).padding(12)
+            // "Tarkibini ko'rish": a real, clearly visible button (was a small text link). Inside the details a pending order can be rejected.
+            Button { openOrder(head.id) } label: {
+                HStack(spacing: 10) {
+                    LgIcon(name: "ic_utensils", color: Dt.greenText, size: 22)
+                    Text("Tarkibini ko'rish").font(.system(size: 17, weight: .bold)).foregroundStyle(Dt.greenText)
+                }
+                .frame(maxWidth: .infinity).frame(height: 56)
+                .background(Dt.green.opacity(0.10), in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Dt.green, lineWidth: 2))
+            }.buttonStyle(.plain).padding(.top, 12)
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

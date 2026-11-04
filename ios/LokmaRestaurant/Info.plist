@@ -31,9 +31,14 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kuryer smenasi ochiq paytda sizga yaqin buyurtmalarni taklif qilish va mijozga buyurtma qayerdaligini ko'rsatish uchun joylashuvingiz har 5 soniyada yuboriladi.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Smena ochiq paytda ilova fonda bo'lsa ham buyurtmani yetkazish davomida joylashuvingiz yuboriladi.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

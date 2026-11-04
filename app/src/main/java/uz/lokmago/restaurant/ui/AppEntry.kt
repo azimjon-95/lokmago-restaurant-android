@@ -33,6 +33,9 @@ class RoleViewModel @Inject constructor(private val session: SessionStore) : Vie
     val courier = session.courier
     val lastCourierLogin: String get() = session.lastCourierLogin
     fun pick(role: String?) = session.setRole(role)
+
+    // Phones that were already signed in as a restaurant skip the chooser (update must not log anyone out of their screen)
+    init { if (session.role.value == null && session.session.value != null) session.setRole("restaurant") }
 }
 
 /**

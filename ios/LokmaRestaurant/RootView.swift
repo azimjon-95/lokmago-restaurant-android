@@ -4,6 +4,7 @@ import SwiftUI
 enum Route: Hashable { case order(String), report, reviews }
 
 struct RootView: View {
+    var switchSide: () -> Void = {}
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var menu: MenuStore
     @Environment(\.scenePhase) private var scenePhase
@@ -40,7 +41,7 @@ struct RootView: View {
                     AlertScreen(openOrder: { id in model.minimize(); path.append(.order(id)) }).transition(.opacity)
                 }
             } else {
-                LoginScreen()
+                LoginScreen(onSwitchSide: switchSide)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.queue.isEmpty)

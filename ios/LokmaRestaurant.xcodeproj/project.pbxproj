@@ -41,6 +41,11 @@
 		A20000000000000000000401 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000401 /* NetworkMonitor.swift */; };
 		A20000000000000000000402 /* PermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000402 /* PermissionsView.swift */; };
 		A20000000000000000000403 /* PushCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000403 /* PushCheckView.swift */; };
+		A20000000000000000000501 /* CourierModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000501 /* CourierModels.swift */; };
+		A20000000000000000000502 /* CourierModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000502 /* CourierModel.swift */; };
+		A20000000000000000000503 /* CourierLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000503 /* CourierLocation.swift */; };
+		A20000000000000000000504 /* CourierViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000504 /* CourierViews.swift */; };
+		A20000000000000000000505 /* courier_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000505 /* courier_alert.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -82,6 +87,11 @@
 		B20000000000000000000401 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		B20000000000000000000402 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		B20000000000000000000403 /* PushCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushCheckView.swift; sourceTree = "<group>"; };
+		B20000000000000000000501 /* CourierModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierModels.swift; sourceTree = "<group>"; };
+		B20000000000000000000502 /* CourierModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierModel.swift; sourceTree = "<group>"; };
+		B20000000000000000000503 /* CourierLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierLocation.swift; sourceTree = "<group>"; };
+		B20000000000000000000504 /* CourierViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierViews.swift; sourceTree = "<group>"; };
+		B20000000000000000000505 /* courier_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = courier_alert.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +140,11 @@
 				B20000000000000000000113 /* AppDelegate.swift */,
 				B20000000000000000000114 /* DesignTokens.swift */,
 				B20000000000000000000201 /* order_alert.wav */,
+				B20000000000000000000501 /* CourierModels.swift */,
+				B20000000000000000000502 /* CourierModel.swift */,
+				B20000000000000000000503 /* CourierLocation.swift */,
+				B20000000000000000000504 /* CourierViews.swift */,
+				B20000000000000000000505 /* courier_alert.wav */,
 				B20000000000000000000203 /* order_alert_long.wav */,
 				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
 				B20000000000000000000401 /* NetworkMonitor.swift */,
@@ -214,6 +229,7 @@
 			files = (
 				A10000000000000000000007 /* Assets.xcassets in Resources */,
 				A20000000000000000000201 /* order_alert.wav in Resources */,
+				A20000000000000000000505 /* courier_alert.wav in Resources */,
 				A20000000000000000000203 /* order_alert_long.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -245,6 +261,10 @@
 				A20000000000000000000112 /* AlertCenter.swift in Sources */,
 				A20000000000000000000113 /* AppDelegate.swift in Sources */,
 				A20000000000000000000114 /* DesignTokens.swift in Sources */,
+				A20000000000000000000501 /* CourierModels.swift in Sources */,
+				A20000000000000000000502 /* CourierModel.swift in Sources */,
+				A20000000000000000000503 /* CourierLocation.swift in Sources */,
+				A20000000000000000000504 /* CourierViews.swift in Sources */,
 				A20000000000000000000401 /* NetworkMonitor.swift in Sources */,
 				A20000000000000000000402 /* PermissionsView.swift in Sources */,
 				A20000000000000000000403 /* PushCheckView.swift in Sources */,
