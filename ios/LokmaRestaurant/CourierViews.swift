@@ -202,7 +202,7 @@ struct OfferCard: View {
             if let l = o.addressLabel, !l.isEmpty { Text("📍 \(l)").font(.system(size: 13)).foregroundStyle(Dt.textSecondary).padding(.top, 8) }
             if let s = o.itemsSummary, !s.isEmpty { Text(s).font(.system(size: 12)).foregroundStyle(Dt.textMuted) }
             HStack(spacing: 10) {
-                Text("Haq: \(som(o.deliveryFee ?? 0))").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange)
+                Text("Haq: \(som(o.deliveryFee ?? 0))\(o.freeDelivery == true ? " • mijozga tekin" : "")").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange)
                 Text(o.isPaid == true ? "To'langan" : "Olinadi: \(som(o.collectAmount ?? 0))").font(.system(size: 13)).foregroundStyle(o.isPaid == true ? Dt.greenText : Dt.text)
             }.padding(.top, 8)
             PrimaryButton(title: "Qabul qilish", icon: "ic_check", loading: courier.busy) { Task { await courier.accept(o.id) } }.padding(.top, 12)
@@ -227,6 +227,9 @@ struct ActiveCard: View {
     var body: some View {
         SectionCard(bg: Dt.cardStat) {
             Text("FAOL BUYURTMA  #\(a.orderCode ?? "")").font(.system(size: 12, weight: .heavy)).foregroundStyle(Dt.orange).tracking(1)
+            // Bosqich: restoranga boryapman (taom hali olinmagan) / taom qo'lida, mijozga boryapman
+            if a.canPickup == true { Text("📍 Restoranga boring va taomni oling").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.orange).padding(.top, 6) }
+            else if a.stage == "to_customer" { Text("🛵 Taom qo'lingizda — mijozga olib boring").font(.system(size: 14, weight: .bold)).foregroundStyle(Dt.greenText).padding(.top, 6) }
             Text("1. Restoran").font(.system(size: 12)).foregroundStyle(Dt.textSecondary).padding(.top, 10)
             Text(a.restaurantName ?? "").font(.system(size: 17, weight: .bold)); Text(a.restaurantAddress ?? "").font(.system(size: 13)).foregroundStyle(Dt.textMuted)
             HStack(spacing: 8) { chip("Xaritada", "ic_map") { open(a.restaurantLat, a.restaurantLng, a.restaurantName ?? "Restoran") }
@@ -239,8 +242,10 @@ struct ActiveCard: View {
             ForEach(Array((a.items ?? []).enumerated()), id: \.offset) { _, i in Text("• \(i.quantity ?? 0)× \(i.name ?? "")").font(.system(size: 14)) }
             Text(a.isPaid == true ? "✅ To'langan — mijozdan pul olinmaydi" : "💵 Mijozdan olinadi: \(som(a.collectAmount ?? 0))").font(.system(size: 15, weight: .bold))
                 .foregroundStyle(a.isPaid == true ? Dt.greenText : Dt.text).padding(.top, 12)
-            Text("Yetkazish haqi: \(som(a.deliveryFee ?? 0))").font(.system(size: 12)).foregroundStyle(Dt.textMuted)
-            PrimaryButton(title: "Topshirdim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.deliver() } }.padding(.top, 14)
+            Text(a.freeDelivery == true ? "Sizning haqingiz: \(som(a.deliveryFee ?? 0)) (mijozga yetkazish tekin)" : "Sizning haqingiz: \(som(a.deliveryFee ?? 0))").font(.system(size: 12)).foregroundStyle(Dt.textMuted)
+            // Ikki qadam: avval «Taomni oldim», keyin «Topshirdim» (havola oqimida faqat «Topshirdim»)
+            if a.canPickup == true { PrimaryButton(title: "Taomni oldim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.pickup() } }.padding(.top, 14) }
+            else { PrimaryButton(title: "Topshirdim", icon: "ic_check_circle", loading: courier.busy) { Task { await courier.deliver() } }.padding(.top, 14) }
         }
     }
 }

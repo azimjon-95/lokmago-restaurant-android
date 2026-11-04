@@ -15,6 +15,8 @@ import uz.lokmago.restaurant.data.remote.dto.OkDto
     val restaurantName: String = "", val restaurantAddress: String = "", val restaurantLat: Double? = null, val restaurantLng: Double? = null,
     val addressLabel: String = "", val itemsSummary: String = "", val deliveryFee: Long = 0, val isPaid: Boolean = false,
     val collectAmount: Long = 0, val paymentMethod: String = "", val distanceM: Int? = null,
+    // LokmaGo qutisi: deliveryFee = KURYER haqi. Eski server maydonlarni yubormaydi — standart qiymatlar xavfsiz.
+    val kind: String = "", val earningSom: Long = 0, val freeDelivery: Boolean = false, val itemsCount: Int = 0,
 )
 @Serializable data class CItem(val name: String = "", val quantity: Int = 0)
 @Serializable data class CActiveDto(
@@ -23,7 +25,11 @@ import uz.lokmago.restaurant.data.remote.dto.OkDto
     val customerName: String = "", val customerPhone: String = "", val addressLabel: String = "", val addressNote: String = "", val lat: Double? = null, val lng: Double? = null,
     val items: List<CItem> = emptyList(), val itemsSummary: String = "", val note: String = "",
     val deliveryFee: Long = 0, val isPaid: Boolean = false, val collectAmount: Long = 0, val paymentMethod: String = "",
+    // Bosqichlar (LokmaGo qutisi): to_restaurant → «Taomni oldim» → to_customer → «Topshirdim». Havola oqimida: darhol to_customer.
+    val kind: String = "", val stage: String = "", val pickedUp: Boolean = false, val canPickup: Boolean = false, val canDeliver: Boolean = true,
+    val earningSom: Long = 0, val freeDelivery: Boolean = false,
 )
+@Serializable data class CPickupRes(val ok: Boolean = true, val already: Boolean = false, val active: CActiveDto? = null)
 @Serializable data class CAcceptRes(val ok: Boolean = true, val active: CActiveDto? = null)
 @Serializable data class CActiveRes(val active: CActiveDto? = null)
 @Serializable data class CHistoryDto(
@@ -47,6 +53,8 @@ interface CourierApi {
     @GET("courier-app/offers") suspend fun offers(): List<COfferDto>
     @POST("courier-app/offers/{id}/accept") suspend fun accept(@Path("id") id: String): CAcceptRes
     @GET("courier-app/active") suspend fun active(): CActiveRes
+    /** «Taomni oldim»: serverda kuryerning joylashuvi restoran bilan solishtiriladi (uzoq bo'lsa adminga belgilanadi). */
+    @POST("courier-app/active/pickup") suspend fun pickup(): CPickupRes
     @POST("courier-app/active/deliver") suspend fun deliver(): OkDto
     @GET("courier-app/history") suspend fun history(@Query("limit") limit: Int = 30): List<CHistoryDto>
     @GET("courier-app/stats") suspend fun stats(): CStats

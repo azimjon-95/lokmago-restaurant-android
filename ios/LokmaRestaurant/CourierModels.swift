@@ -9,6 +9,8 @@ struct CShiftState: Decodable { let onShift: Bool?; let shift: CShift?; let acti
 struct COffer: Decodable, Identifiable {
     let id: String; let orderCode: String?; let restaurantName: String?; let restaurantAddress: String?; let addressLabel: String?; let itemsSummary: String?
     let deliveryFee: Int64?; let isPaid: Bool?; let collectAmount: Int64?; let distanceM: Int?
+    // LokmaGo qutisi: deliveryFee = KURYER haqi (eski server bu maydonlarni yubormaydi — hammasi ixtiyoriy)
+    let kind: String?; let freeDelivery: Bool?
 }
 struct CItem: Decodable { let name: String?; let quantity: Int? }
 struct CActive: Decodable, Identifiable {
@@ -16,7 +18,10 @@ struct CActive: Decodable, Identifiable {
     let customerName: String?; let customerPhone: String?; let addressLabel: String?; let addressNote: String?; let note: String?
     let restaurantLat: Double?; let restaurantLng: Double?; let lat: Double?; let lng: Double?
     let items: [CItem]?; let deliveryFee: Int64?; let isPaid: Bool?; let collectAmount: Int64?
+    // Bosqichlar (LokmaGo qutisi): to_restaurant → «Taomni oldim» → to_customer → «Topshirdim». Havola oqimida canPickup yo'q (nil/false).
+    let kind: String?; let stage: String?; let pickedUp: Bool?; let canPickup: Bool?; let canDeliver: Bool?; let freeDelivery: Bool?
 }
+struct CPickupRes: Decodable { let ok: Bool?; let already: Bool?; let active: CActive? }
 struct CAcceptRes: Decodable { let active: CActive? }
 struct CActiveRes: Decodable { let active: CActive? }
 struct CHistory: Decodable, Identifiable { let id: String; let orderCode: String?; let restaurantName: String?; let addressLabel: String?; let deliveryFee: Int64?; let deliveredAt: String?; let minutes: Int? }

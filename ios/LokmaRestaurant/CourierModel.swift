@@ -99,6 +99,8 @@ import CoreLocation
     }
     func endShift() async { await act { let _: CShiftState = try await send("courier-app/shift/end", method: "POST"); CourierLocation.shared.stop(); await refresh() } }
     func accept(_ id: String) async { await act { let r: CAcceptRes = try await send("courier-app/offers/\(id)/accept", method: "POST"); active = r.active; await refresh() } }
+    /// «Taomni oldim» — restorandan oldi; keyingi qadam «Topshirdim».
+    func pickup() async { await act { let r: CPickupRes = try await send("courier-app/active/pickup", method: "POST"); if let a = r.active { active = a }; message = "Taom olindi ✓ — mijozga boring"; await refresh() } }
     func deliver() async { await act { let _: OkResponse = try await send("courier-app/active/deliver", method: "POST"); message = "Buyurtma topshirildi ✓"; await refresh(); await loadStats() } }
     func loadHistory() async { if let h: [CHistory] = try? await send("courier-app/history?limit=50") { history = h } }
     func loadStats() async { if let s: CStats = try? await send("courier-app/stats") { stats = s } }

@@ -62,6 +62,8 @@ class CourierViewModel @Inject constructor(
     fun startShift() = act { courierCall { api.startShift() }; CourierLocationService.start(ctx); registrar.ensureRegistered(); load() }
     fun endShift() = act { courierCall { api.endShift() }; CourierLocationService.stop(ctx); load() }
     fun accept(id: String) = act { val r = courierCall { api.accept(id) }; ui.value = ui.value.copy(active = r.active); load() }
+    /** «Taomni oldim» — restorandan oldi; keyingi qadam «Topshirdim». */
+    fun pickup() = act { val r = courierCall { api.pickup() }; ui.value = ui.value.copy(active = r.active ?: ui.value.active, message = "Taom olindi ✓ — mijozga boring"); load() }
     fun deliver() = act { courierCall { api.deliver() }; ui.value = ui.value.copy(message = "Buyurtma topshirildi ✓"); load(); loadStats() }
     fun loadHistory() = viewModelScope.launch { runCatching { courierCall { api.history(50) } }.onSuccess { ui.value = ui.value.copy(history = it) } }
     fun loadStats() = viewModelScope.launch { runCatching { courierCall { api.stats() } }.onSuccess { ui.value = ui.value.copy(stats = it) } }
