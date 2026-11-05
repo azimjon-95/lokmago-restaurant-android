@@ -14,7 +14,7 @@ def strip(s):
             d=1; j=i+2
             while j<len(t) and d: d+=(t[j]=='(')-(t[j]==')'); j+=1
             out.append(t[i+2:j-1]); i=j
-        return '"" '+' ; '.join(out)
+        return '"" '+' ; '.join(re.sub(r'"[^"]*"','""',e) for e in out)       # nested string literals inside an interpolation are not code
     return re.sub(r'"(?:\\.|[^"\\\n])*"',lit,s)
 raw={f:open(f,encoding='utf-8').read() for f in files}
 code={f:strip(s) for f,s in raw.items()}
@@ -113,7 +113,7 @@ for f in files:
         if u in known or u in apple: continue
         # enum-case style .X or labels are lowercase; capitalised unknowns:
         errors.append((nm,'unknown type?',u))
-FALSE_POSITIVES={'HTTPURLResponse','DEBUG','ObservableObject','PhotosUI','FocusState','Rectangle'}      # Apple types / compile flags the name list does not know
+FALSE_POSITIVES={'HTTPURLResponse','DEBUG','ObservableObject','PhotosUI','FocusState','Rectangle','StrokeStyle'}      # Apple types / compile flags the name list does not know
 real=[e for e in sorted(set(errors)) if not (e[1]=='unknown type?' and e[2] in FALSE_POSITIVES)]
 for e in real: print("SWIFT",*e)
 print("count:",len(real)); import sys; sys.exit(1 if real else 0)

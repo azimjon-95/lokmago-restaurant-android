@@ -78,6 +78,7 @@ enum Prefs {
 
     // ---- lifecycle -----------------------------------------------------------------------------------
     func start() async {
+        AlertCenter.shared.appVisible(true)
         guard isSignedIn else { return }
         startRealtime()
         if !UserDefaults.standard.bool(forKey: "permissions-onboarded") { showPermissions = true }
@@ -151,8 +152,10 @@ enum Prefs {
     func scenePhaseChanged(_ phase: ScenePhase) {
         switch phase {
         case .active:
+            AlertCenter.shared.appVisible(true)
             Task { await wake() }
-        default: break
+        default:
+            AlertCenter.shared.appVisible(false)          // left the app / locked: the alarm may rise again (AlertAttention)
         }
     }
 
@@ -179,6 +182,7 @@ enum Prefs {
     }
 
     func signOut() {
+        UserDefaults.standard.set("", forKey: "app-role")          // after logout the first screen is the Restoran / Kuryer choice
         if let auth = token, let hex = UserDefaults.standard.string(forKey: "apns-token") {
             Task { try? await api.unregisterDevice(token: hex, bearer: auth) }
         }

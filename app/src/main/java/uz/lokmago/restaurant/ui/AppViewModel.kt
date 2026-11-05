@@ -90,7 +90,7 @@ class AppViewModel @Inject constructor(
     fun sync() { viewModelScope.launch { coordinator.syncPending(); menu.reconcile(); devices.ensureRegistered(); devices.syncPolicy() } }
     /** Sliding session: a restaurant that keeps using the app is never asked for its password again. */
     fun refreshSession() { viewModelScope.launch { auth.refreshIfStale() } }
-    fun logout() { viewModelScope.launch { coordinator.logout() } }
+    fun logout() { viewModelScope.launch { coordinator.logout(); sessionStore.setRole(null) } }      // after logout the first screen is the Restoran / Kuryer choice
 
     /** Serverda versiya siyosati endpointi yo'q — majburiy yangilanish faqat Play "update priority" (UpdateManager). */
     suspend fun updatePolicy(): VersionDto.AndroidVersion? = null

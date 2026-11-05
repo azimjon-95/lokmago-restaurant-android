@@ -78,9 +78,12 @@ class Notifier @Inject constructor(
             .setTicker(title)
             .setContentIntent(openOrder(orderId))
             .setFullScreenIntent(openOrder(orderId, fromAlert = true), true)   // locked screen → the alert screen; unlocked in another app → heads-up banner
-            // Two clear actions right on the banner (no need to open the app to accept)
-            .addAction(0, "✅ Qabul qilish", reminderAction(orderId, ReminderActionReceiver.ACTION_ACCEPT_ORDER))
-            .addAction(0, "🍽 Ko'rish", openOrder(orderId))
+            // Phone-call-like banner: exactly two big choices — mute the music, or step into the app (accepting happens there, with the details in view)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)      // alarm category: heads-up, and allowed through Do-Not-Disturb when the user lets alarms through
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setSubText("LGO Business")
+            .addAction(0, "🔇 Ovozni o'chirish", silenceAction())
+            .addAction(0, "📲 Ilovaga kirish", openOrder(orderId))
             .build()
         nm.notify(idFor(orderId), n)
     }
@@ -140,13 +143,14 @@ class Notifier @Inject constructor(
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
             .setContentIntent(openOrder(head?.id, fromAlert = true))
-        if (!silenced) {
-            b.addAction(0, "Signalni to'xtatish", PendingIntent.getService(
-                ctx, 1, Intent(ctx, OrderAlertService::class.java).setAction(OrderAlertService.ACTION_SILENCE),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
-        }
+        if (!silenced) b.addAction(0, "🔇 Ovozni o'chirish", silenceAction())
+        b.addAction(0, "📲 Ilovaga kirish", openOrder(head?.id, fromAlert = true))
         return b.build()
     }
+
+    private fun silenceAction(): PendingIntent = PendingIntent.getService(
+        ctx, 1, Intent(ctx, OrderAlertService::class.java).setAction(OrderAlertService.ACTION_SILENCE),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
     private fun openOrder(orderId: String?, fromAlert: Boolean = false): PendingIntent {
         val i = Intent(ctx, MainActivity::class.java)

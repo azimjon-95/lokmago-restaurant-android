@@ -16,12 +16,12 @@ KC="$CACHE/kotlinc/bin/kotlinc"; COROUTINES="$CACHE/kotlinc/lib/kotlinx-coroutin
 M="$ROOT/app/src/main/java/uz/lokmago/restaurant"; T="$ROOT/app/src/test/java/uz/lokmago/restaurant"
 W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 mkdir -p "$W/tests"
-for f in "$T/OrderQueueTest.kt" "$T/push/PushPayloadTest.kt" "$T/push/DeviceRegistrationTest.kt"; do
+for f in "$T/OrderQueueTest.kt" "$T/AlertAttentionTest.kt" "$T/push/PushPayloadTest.kt" "$T/push/DeviceRegistrationTest.kt"; do
   sed -e 's/^import org\.junit\.Assert\.\*/import lokma.shim.*/' -e 's/^import org\.junit\.Test/import lokma.shim.Test/' "$f" > "$W/tests/$(basename "$f")"
 done
 "$KC" -nowarn -cp "$COROUTINES" -d "$W/out" \
   "$ROOT/tools/kotlin-check/shim/Shim.kt" "$ROOT/tools/kotlin-check/shim/Runner.kt" \
-  "$M/domain/Order.kt" "$M/domain/OrderQueue.kt" "$M/util/Format.kt" "$M/push/PushPayload.kt" "$M/push/DeviceRegistration.kt" \
+  "$M/domain/Order.kt" "$M/domain/OrderQueue.kt" "$M/util/Format.kt" "$M/push/PushPayload.kt" "$M/push/DeviceRegistration.kt" "$M/alert/AlertAttention.kt" \
   "$W"/tests/*.kt 2>&1 | grep -v "^warning:" || true
 java -cp "$W/out:$CACHE/kotlinc/lib/kotlin-stdlib.jar:$COROUTINES" lokma.shim.RunnerKt \
-  uz.lokmago.restaurant.OrderQueueTest uz.lokmago.restaurant.push.PushPayloadTest uz.lokmago.restaurant.push.DeviceRegistrationTest
+  uz.lokmago.restaurant.OrderQueueTest uz.lokmago.restaurant.AlertAttentionTest uz.lokmago.restaurant.push.PushPayloadTest uz.lokmago.restaurant.push.DeviceRegistrationTest

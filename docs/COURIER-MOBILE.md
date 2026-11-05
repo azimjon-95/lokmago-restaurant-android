@@ -31,3 +31,14 @@ Server: `lakmago-server` `docs/COURIER-APP.md`. Admin panelda akkaunt yaratiladi
 6. Qabul → buyurtma «yo'lda» (restoran panelida kuryer nomi), mijoz kuzatuvida kuryer harakati; mijozga 150 m qolganda «yetib keldi».
 7. «Topshirdim» → buyurtma «yetkazildi»; Tarix va Hisobotda ko'rinadi. Smenani yakunlash; ilovani majburan yopib qayta oching — smena/joylashuv serverdagi holatga ergashadi.
 8. Telefonni bloklab/ilovani fonga olib 2 daqiqa yuring: nuqtalar Redis'da yangilanib turadi (Android: doimiy bildirishnoma; iOS: ko'k belgi).
+
+## Dizayn va ovoz (mobile polish)
+* **Kuryer tomoni — yorug' to'q sariq dizayn** (restoran tomoni qora bo'lib qoladi): Bosh sahifa (salomlashish, **Onlayn** kartasi = smena, bugungi daromad, GPS aniqligi va ulanish holati),
+  Buyurtmalar (Faol / Tarix), Daromad (Bugun / Hafta / Oy, to'lovlar tarixi), Profil. Yangi taklif — telefon qo'ng'irog'iga o'xshash to'liq ekran modal: 30 soniyalik hisoblagich, «Rad etish» (faqat shu telefonda yashiradi) / «Qabul qilish».
+  Kirish: **faqat login va parol** (SMS bilan telefon raqamni tasdiqlash YO'Q).
+* **Birinchi ko'rinadigan ekran:** ilova birinchi ochilganda VA har chiqishdan keyin «Restoran boshqaruvi» / «Kuryer» tanlanadi, so'ng login/parol.
+* **Tizim panellari:** qora ilovada soat/antenna/batareya yorug' ikonkalar bilan (telefon mavzusiga bog'liq emas); kuryer (yorug') ekranlarida qora ikonkalar. Buyurtma tafsiloti sarlavhasi status bar ostida, tugmalar navigatsiya paneli ustida.
+* **Moslashuvchan:** telefonda o'zgarmaydi; planshet / katlanuvchi / landshaftda kontent markazdagi ustun (640 dp/pt).
+* **Bloklangan ekran / boshqa ilova ustida** (Android): qo'ng'iroqqa o'xshash tepadagi bildirishnoma, ikki tugma: **Ovozni o'chirish** va **Ilovaga kirish** (alarm kategoriyasi — «Bezovta qilmang»dan o'tishi mumkin). iPhone: **Ilovaga kirish** va **Qabul qilish**.
+* **Aqlli ovoz** (`AlertAttention`, Android'da 46 test): ilovaga kirdingiz → melodiya JUDA past (18%), tafsilotni ochdingiz → yanada past (8%), tafsilotdan hech narsa qilmay chiqdingiz → ~6 s dan keyin ko'tariladi (45%),
+  ilovada 20 s tegmadingiz → 45%, ilovadan chiqdingiz/bloklandi → 3 s dan keyin to'liq. Hamma o'tish yumshoq; tebranish faqat ilova ko'rinmaganda. iPhone'da ilova fonda ovoz chalolmaydi — u yerda push (server takrorlaydi).

@@ -16,6 +16,15 @@ final class AlertCenter {
     private var player: AVAudioPlayer?
     private var hapticTimer: Timer?
     private let soundFile = "order_alert.wav"
+    // The alarm follows the user (AlertAttention): whisper while the app is in use, louder again when they leave it without acting
+    private let attention = AlertAttention()
+    private var baseVolume: Float = 1
+    private var lastLevel: Float = -1
+    private var wantsHaptics = false
+    private var gainTask: Task<Void, Never>?
+    func appVisible(_ v: Bool) { attention.appVisible(v) }
+    func detailsOpen(_ v: Bool) { attention.detailsOpen(v) }
+    func touched() { attention.touched() }
 
     // ---- in-app alarm --------------------------------------------------------------------------------
     func startRinging(volume: Float, sound: Bool, vibrate: Bool) {
@@ -27,19 +36,39 @@ final class AlertCenter {
                 player = try? AVAudioPlayer(contentsOf: url)
                 player?.numberOfLoops = -1
             }
-            player?.volume = volume
+            baseVolume = volume
+            let t = attention.target(); lastLevel = t.level
+            player?.volume = volume * t.level                       // starts at the right level: no blast when the app is open
             if player?.isPlaying == false { player?.play() }
+            if gainTask == nil { startGainLoop() }
         } else { stopSound() }
-        if vibrate {
-            if hapticTimer == nil {
-                let gen = UINotificationFeedbackGenerator()
-                gen.notificationOccurred(.warning)
-                hapticTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in gen.notificationOccurred(.warning) }
-            }
-        } else { stopHaptics() }
+        wantsHaptics = vibrate
+        if vibrate && attention.target().level >= 0.3 { startHaptics() } else { stopHaptics() }       // vibration only for "phone in a pocket"
     }
 
-    func stopRinging() { stopSound(); stopHaptics() }
+    private func startHaptics() {
+        guard hapticTimer == nil else { return }
+        let gen = UINotificationFeedbackGenerator()
+        gen.notificationOccurred(.warning)
+        hapticTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in gen.notificationOccurred(.warning) }
+    }
+
+    private func startGainLoop() {
+        gainTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard let self, let p = self.player else { continue }
+                let t = self.attention.target()
+                if abs(t.level - self.lastLevel) > 0.001 {
+                    self.lastLevel = t.level
+                    p.setVolume(self.baseVolume * t.level, fadeDuration: Double(t.rampMs) / 1000)          // smooth, never a jump
+                    if t.level < 0.3 { self.stopHaptics() } else if self.wantsHaptics { self.startHaptics() }
+                }
+            }
+        }
+    }
+
+    func stopRinging() { gainTask?.cancel(); gainTask = nil; lastLevel = -1; stopSound(); stopHaptics() }
     private func stopSound() { player?.stop(); player = nil; try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation) }
     private func stopHaptics() { hapticTimer?.invalidate(); hapticTimer = nil }
 
@@ -48,8 +77,9 @@ final class AlertCenter {
 
     private func registerCategories() {
         let accept = UNNotificationAction(identifier: "ORDER_ACCEPT", title: "Qabul qilish", options: [.foreground])
-        let cancel = UNNotificationAction(identifier: "ORDER_CANCEL", title: "Bekor qilish", options: [.foreground, .destructive])
-        let category = UNNotificationCategory(identifier: "NEW_ORDER", actions: [accept, cancel], intentIdentifiers: [], options: [])
+        // Two clear choices on the banner: step into the app, or accept. (The destructive "Bekor qilish" was removed: rejecting without seeing the order is a mistake waiting to happen — it is inside the details now, with a confirmation.)
+        let open = UNNotificationAction(identifier: "ORDER_OPEN", title: "Ilovaga kirish", options: [.foreground])
+        let category = UNNotificationCategory(identifier: "NEW_ORDER", actions: [open, accept], intentIdentifiers: [], options: [])
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 

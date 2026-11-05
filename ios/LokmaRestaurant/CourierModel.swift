@@ -22,6 +22,8 @@ import CoreLocation
     @Published var busy = false
     @Published var message: String?
     @Published private(set) var locationDenied = false
+    @Published private(set) var gpsAccuracy: Int?              // metres, from the last location sent
+    @Published private(set) var linkOK: Bool?                  // last location reached the server?
     private var poll: Task<Void, Never>?
 
     var isSignedIn: Bool { token != nil }
@@ -66,6 +68,7 @@ import CoreLocation
     func signOut() async {
         if let hex = UserDefaults.standard.string(forKey: "apns-token"), let t = token { _ = try? await api.requestRaw("courier-app/devices", method: "DELETE", body: CDeviceDel(token: hex), bearer: t) }
         CourierLocation.shared.stop(); signOutLocally(); name = ""; message = nil
+        UserDefaults.standard.set("", forKey: "app-role")          // after logout the first screen is the Restoran / Kuryer choice
     }
 
     // ---- yangilash (har 5 s: takliflar va faol buyurtma) ----
@@ -125,9 +128,9 @@ import CoreLocation
             guard let self else { return false }
             let body = CLocationReq(lat: loc.coordinate.latitude, lng: loc.coordinate.longitude, accuracy: loc.horizontalAccuracy >= 0 ? loc.horizontalAccuracy : nil,
                                     speed: loc.speed >= 0 ? loc.speed : nil, heading: loc.course >= 0 ? loc.course : nil)
-            do { _ = try await self.api.requestRaw("courier-app/location", method: "POST", body: body, bearer: self.token); return true }
-            catch let e as APIError { if case .http(let code, _) = e, code == 401 || code == 409 { return false }; return true }   // 401/409: smena yopiq yoki token yaroqsiz → to'xtaydi
-            catch { return true }                                                                                                    // tarmoq yo'q: keyingi nuqta bilan qayta uriniladi
+            do { _ = try await self.api.requestRaw("courier-app/location", method: "POST", body: body, bearer: self.token); self.gpsAccuracy = loc.horizontalAccuracy >= 0 ? Int(loc.horizontalAccuracy) : nil; self.linkOK = true; return true }
+            catch let e as APIError { if case .http(let code, _) = e, code == 401 || code == 409 { return false }; self.linkOK = false; return true }   // 401/409: smena yopiq yoki token yaroqsiz → to'xtaydi
+            catch { self.linkOK = false; return true }                                                                                                    // tarmoq yo'q: keyingi nuqta bilan qayta uriniladi
         }
     }
 

@@ -96,6 +96,7 @@ class CourierViewModel @Inject constructor(
         registrar.unregister()
         CourierLocationService.stop(ctx)
         session.expireCourier()
+        session.setRole(null)                                   // after logout the first screen is the Restoran / Kuryer choice
         ui.value = CourierUi()
     }
 

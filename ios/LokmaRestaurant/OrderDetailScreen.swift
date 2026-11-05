@@ -51,6 +51,9 @@ struct OrderDetailScreen: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(item: $lightbox) { ImageLightbox(url: $0.url) }
+        // The user is reading this order: the alarm drops to a whisper; leaving without acting lets it rise again (AlertAttention)
+        .onAppear { AlertCenter.shared.detailsOpen(true) }
+        .onDisappear { AlertCenter.shared.detailsOpen(false) }
         .alert("Buyurtma rad etilsinmi?", isPresented: $confirmReject) {
             Button("Rad etish", role: .destructive) { if let o = order { Task { await model.update(o, to: "cancelled") } } }
             Button("Yo'q", role: .cancel) {}

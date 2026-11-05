@@ -20,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.R
 import uz.lokmago.restaurant.data.local.SettingsStore
@@ -42,6 +43,9 @@ class OrderAlertService : Service() {
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var savedAlarmVolume: Int? = null
+    private var gainJob: Job? = null
+    private var gain = 1f                       // current player gain (0..1), moved smoothly toward AlertAttention.target()
+    @Volatile private var wantVibe = false
     private val attrs = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
 
@@ -55,6 +59,18 @@ class OrderAlertService : Service() {
             notifier.serviceNotification(q.head, q.waiting.size, alert.silenced.value),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
 
+        if (gainJob == null) gainJob = scope.launch {
+            var last = android.os.SystemClock.elapsedRealtime()
+            while (true) {
+                delay(100)
+                val nowMs = android.os.SystemClock.elapsedRealtime()
+                val tg = alert.attention.target()
+                gain = AlertAttention.step(gain, tg.level, nowMs - last, tg.rampMs); last = nowMs
+                player?.runCatching { setVolume(gain, gain) }
+                // vibration is for "phone in a pocket": while the user is looking at the app it only annoys
+                if (wantVibe && gain >= 0.3f) startVibration() else stopVibration()
+            }
+        }
         if (job == null) {
             job = scope.launch {
                 combine(queue.state, alert.silenced, alert.unresolved, settings.state) { s, silenced, unresolved, cfg ->
@@ -77,7 +93,7 @@ class OrderAlertService : Service() {
         getSystemService(NotificationManager::class.java).notify(
             Notifier.SERVICE_ID, notifier.serviceNotification(s.q.head, s.q.waiting.size, s.silenced))
         if (!s.silenced && s.sound) { applyVolume(s.volume); startSound() } else stopSound()
-        if (!s.silenced && s.vibe) startVibration() else stopVibration()
+        wantVibe = !s.silenced && s.vibe
     }
 
     private fun startSound() {
@@ -89,6 +105,7 @@ class OrderAlertService : Service() {
                 setWakeMode(this@OrderAlertService, PowerManager.PARTIAL_WAKE_LOCK)   // CPU stays awake while ringing with the screen off
                 resources.openRawResourceFd(R.raw.order_alert).use { setDataSource(it.fileDescriptor, it.startOffset, it.length) }
                 isLooping = true
+                gain = alert.attention.target().level; setVolume(gain, gain)      // starts at the right level (no blast when the app is open)
                 prepare(); start()
             }
         }.getOrNull()
@@ -124,7 +141,7 @@ class OrderAlertService : Service() {
     private fun stopVibration() { vibrator?.cancel(); vibrator = null }
 
     override fun onDestroy() {
-        stopSound(); stopVibration(); scope.cancel(); super.onDestroy()
+        gainJob?.cancel(); stopSound(); stopVibration(); scope.cancel(); super.onDestroy()
     }
 
     companion object { const val ACTION_SILENCE = "uz.lokmago.restaurant.SILENCE" }

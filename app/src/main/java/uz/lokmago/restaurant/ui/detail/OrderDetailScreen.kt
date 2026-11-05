@@ -92,6 +92,7 @@ class OrderDetailViewModel @Inject constructor(
         }
     }
     val silenced = coordinator.silenced
+    val attention = coordinator.attention
     fun silence() = coordinator.silence()
 
     fun stillInProgress() {
@@ -112,6 +113,8 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
     val ui by vm.ui.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     val muted by vm.silenced.collectAsStateWithLifecycle()
+    // The user is reading this order: the alarm drops to a whisper; leaving without acting lets it rise again (AlertAttention)
+    DisposableEffect(Unit) { vm.attention.detailsOpen(true); onDispose { vm.attention.detailsOpen(false) } }
     var confirmReject by remember { mutableStateOf(false) }
     if (confirmReject) AlertDialog(
         onDismissRequest = { confirmReject = false }, containerColor = Lg.Surface,
@@ -186,7 +189,7 @@ fun OrderDetailScreen(onBack: () -> Unit, vm: OrderDetailViewModel = hiltViewMod
                     Spacer(Modifier.height(4.dp))
                 }
                 o.nextAction()?.let { a ->
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.navigationBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         // A pending order may still be ringing: the mute button is right here too (not only on the alert screen)
                         if (o.status == OrderStatus.NEW && !muted) Row(
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Lg.Red.copy(alpha = 0.14f)).clickableNoRipple { vm.silence() }.padding(14.dp),

@@ -27,6 +27,9 @@ class AlertController @Inject constructor(@ApplicationContext private val ctx: C
     fun markUnresolved(id: String) = _unresolved.update { it + id }
     fun markResolved(id: String) = _unresolved.update { it - id }
 
+    /** What the user is doing (app visible / details open / touching) → how loud the alarm may be. Pure logic: AlertAttention. */
+    val attention = AlertAttention { android.os.SystemClock.elapsedRealtime() }
+
     fun silence() { _silenced.value = true }
     /** A brand-new order always re-arms the alarm, even if staff silenced the previous one. */
     fun rearm() { _silenced.value = false }

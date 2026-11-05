@@ -46,10 +46,15 @@ class RoleViewModel @Inject constructor(private val session: SessionStore) : Vie
 fun AppEntry(restaurantContent: @Composable (onSwitchSide: () -> Unit) -> Unit, vm: RoleViewModel = hiltViewModel()) {
     val role by vm.role.collectAsStateWithLifecycle()
     val courier by vm.courier.collectAsStateWithLifecycle()
+    // ADAPTIVE: on phones this changes nothing; on tablets / unfolded foldables / landscape the app is a centred column (max 640 dp), not a stretched one
+    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF000812)), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxHeight().widthIn(max = 640.dp).fillMaxWidth()) {
     when (role) {
         null -> RoleChooserScreen(onPick = vm::pick)
         "courier" -> if (courier == null) CourierLoginScreen(vm.lastCourierLogin, onSwitchSide = { vm.pick(null) }) else CourierRoot()
         else -> restaurantContent { vm.pick(null) }
+    }
+    }
     }
 }
 

@@ -81,9 +81,10 @@ class CourierLocationService : Service() {
             if (loc != null && System.currentTimeMillis() - loc.time < 30_000) {
                 try {
                     courierCall { api.location(CLocationReq(loc.latitude, loc.longitude, if (loc.hasAccuracy()) loc.accuracy.toDouble() else null, if (loc.hasSpeed()) loc.speed.toDouble() else null, if (loc.hasBearing()) loc.bearing.toDouble() else null)) }
+                    CourierLiveState.accuracyM.value = if (loc.hasAccuracy()) loc.accuracy.toInt() else null; CourierLiveState.connected.value = true
                 } catch (e: AppError.Unauthorized) { stopSelf(); return }
                 catch (e: AppError.Message) { if (e.message?.contains("Ishni boshladim") == true) { stopSelf(); return } }
-                catch (_: AppError) { /* offline / server band: keyingi nuqta bilan */ }
+                catch (_: AppError) { CourierLiveState.connected.value = false /* offline / server band: keyingi nuqta bilan */ }
             }
             delay(5_000)
         }
@@ -94,6 +95,7 @@ class CourierLocationService : Service() {
 
     override fun onDestroy() {
         runCatching { lm?.removeUpdates(listener) }
+        CourierLiveState.reset()
         scope.cancel(); super.onDestroy()
     }
 

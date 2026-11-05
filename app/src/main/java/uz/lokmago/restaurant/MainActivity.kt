@@ -26,6 +26,12 @@ import uz.lokmago.restaurant.update.UpdateManager
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @javax.inject.Inject lateinit var settings: uz.lokmago.restaurant.data.local.SettingsStore
+    @javax.inject.Inject lateinit var alertController: uz.lokmago.restaurant.alert.AlertController
+
+    // The alarm follows the user: visible app → whisper, left the app / locked → full volume (AlertAttention)
+    override fun onStart() { super.onStart(); alertController.attention.appVisible(true) }
+    override fun onStop() { alertController.attention.appVisible(false); super.onStop() }
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { alertController.attention.touched(); return super.dispatchTouchEvent(ev) }
     private val vm: AppViewModel by viewModels()
     private val openRequest = MutableStateFlow<OpenRequest?>(null)
     private var policy: uz.lokmago.restaurant.data.remote.dto.VersionDto.AndroidVersion? = null
@@ -36,7 +42,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Dark app on any phone theme: LIGHT status/navigation icons (the default follows the phone theme → black icons on our dark screen)
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         // "Kassa rejimi": while the app is open the screen stays on (a restaurant phone on the counter, on a charger)
         androidx.lifecycle.lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {

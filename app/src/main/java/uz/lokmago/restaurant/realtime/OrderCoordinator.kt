@@ -249,5 +249,6 @@ class OrderCoordinator @Inject constructor(
     }
 
     fun silence() = alert.silence()
+    val attention get() = alert.attention
     fun deferHead() = queue.deferHead()
 }

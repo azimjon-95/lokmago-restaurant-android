@@ -107,7 +107,7 @@ fun LokmaGoRoot(
                         onFixNotifications = { vm.refreshReadiness(); vm.showPermissions.value = true },
                     )
                 }
-                composable("order/{id}") { OrderDetailScreen(onBack = { nav.popBackStack() }) }
+                composable("order/{id}") { Box(Modifier.statusBarsPadding()) { OrderDetailScreen(onBack = { nav.popBackStack() }) } }
                 composable("report") { Box(Modifier.statusBarsPadding()) { ReportScreen(onBack = { nav.popBackStack() }) } }
                 composable("reviews") { Box(Modifier.statusBarsPadding()) { ReviewsScreen(onBack = { nav.popBackStack() }) } }
             }

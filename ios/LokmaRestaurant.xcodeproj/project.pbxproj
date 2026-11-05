@@ -46,6 +46,7 @@
 		A20000000000000000000503 /* CourierLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000503 /* CourierLocation.swift */; };
 		A20000000000000000000504 /* CourierViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000504 /* CourierViews.swift */; };
 		A20000000000000000000505 /* courier_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000505 /* courier_alert.wav */; };
+		A20000000000000000000601 /* AlertAttention.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000601 /* AlertAttention.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -92,6 +93,7 @@
 		B20000000000000000000503 /* CourierLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierLocation.swift; sourceTree = "<group>"; };
 		B20000000000000000000504 /* CourierViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierViews.swift; sourceTree = "<group>"; };
 		B20000000000000000000505 /* courier_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = courier_alert.wav; sourceTree = "<group>"; };
+		B20000000000000000000601 /* AlertAttention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertAttention.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -149,6 +151,7 @@
 				B20000000000000000000202 /* LokmaRestaurant.entitlements */,
 				B20000000000000000000401 /* NetworkMonitor.swift */,
 				B20000000000000000000402 /* PermissionsView.swift */,
+				B20000000000000000000601 /* AlertAttention.swift */,
 				B20000000000000000000403 /* PushCheckView.swift */,
 				B20000000000000000000301 /* CloudinaryUploader.swift */,
 				B20000000000000000000302 /* MenuStore.swift */,
@@ -267,6 +270,7 @@
 				A20000000000000000000504 /* CourierViews.swift in Sources */,
 				A20000000000000000000401 /* NetworkMonitor.swift in Sources */,
 				A20000000000000000000402 /* PermissionsView.swift in Sources */,
+				A20000000000000000000601 /* AlertAttention.swift in Sources */,
 				A20000000000000000000403 /* PushCheckView.swift in Sources */,
 				A20000000000000000000301 /* CloudinaryUploader.swift in Sources */,
 				A20000000000000000000302 /* MenuStore.swift in Sources */,
