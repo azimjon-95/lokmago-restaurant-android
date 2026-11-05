@@ -124,6 +124,7 @@ private fun OfferModal(o: COfferDto, busy: Boolean, onAccept: () -> Unit, onReje
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Cr.OrangeSoft).padding(14.dp)) {
                     Text("Sizning daromadingiz", color = Cr.Muted, fontSize = 12.sp)
                     Text(o.deliveryFee.som(), color = Cr.Orange, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                    if (o.freeDelivery) Text("Mijozga yetkazish tekin (LokmaGo to'laydi)", color = Cr.Muted, fontSize = 12.sp)
                     Text(if (o.isPaid) "To'langan — mijozdan pul olinmaydi" else "Mijozdan olinadi: ${o.collectAmount.som()}", color = Cr.Text, fontSize = 13.sp)
                 }
             }
@@ -186,6 +187,7 @@ private fun HomeTab(vm: CourierViewModel, ui: CourierUi, onOpenEarnings: () -> U
             if (ui.onShift && ui.active != null) Text("Smenani yakunlash uchun avval buyurtmani topshiring", color = Cr.Muted, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp, top = 6.dp))
             if (denied) Text("Joylashuv ruxsatisiz smena boshlab bo'lmaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → Ilovalar → Joylashuv → «Ilova ishlatilayotganda».", color = Cr.Red, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp, top = 6.dp))
         }
+        if (ui.districts.isNotEmpty()) item { DistrictsCard(ui.districts, ui.workDistricts, ui.busy, onSave = vm::saveDistricts) }
         item {
             CrCard(Modifier.clickable(onClick = onOpenEarnings)) {
                 Text("Bugungi daromad", color = Cr.Muted, fontSize = 13.sp)
@@ -211,7 +213,7 @@ private fun HomeTab(vm: CourierViewModel, ui: CourierUi, onOpenEarnings: () -> U
             }
         }
         val a = ui.active
-        if (a != null) item { ActiveCard(a, ui.busy, vm::deliver) }
+        if (a != null) item { ActiveCard(a, ui.busy, vm::pickup, vm::deliver) }
         else if (ui.onShift) {
             item { Text("Yaqin atrofdagi buyurtmalar", color = Cr.Text, fontSize = 16.sp, fontWeight = FontWeight.Bold) }
             if (ui.offers.isEmpty()) item { Empty("Hozircha buyurtma yo'q", "Yangi yetkazish chiqqanda bildirishnoma va ovoz bilan xabar beramiz") }
@@ -235,19 +237,26 @@ private fun OfferCard(o: COfferDto, busy: Boolean, onAccept: () -> Unit) = CrCar
     if (o.addressLabel.isNotBlank()) Text("Yetkazish: ${o.addressLabel}", color = Cr.Text, fontSize = 13.sp)
     if (o.itemsSummary.isNotBlank()) Text(o.itemsSummary, color = Cr.Muted, fontSize = 12.sp)
     Spacer(Modifier.height(8.dp))
-    Text("Daromad: ${o.deliveryFee.som()}", color = Cr.Orange, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+    Text("Daromad: ${o.deliveryFee.som()}" + if (o.freeDelivery) " • mijozga tekin" else "", color = Cr.Orange, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
     Text(if (o.isPaid) "To'langan" else "Mijozdan olinadi: ${o.collectAmount.som()}", color = Cr.Muted, fontSize = 12.sp)
     Spacer(Modifier.height(12.dp))
     CrButton("Qabul qilish", loading = busy, onClick = onAccept)
 }
 
 @Composable
-private fun ActiveCard(a: CActiveDto, busy: Boolean, onDeliver: () -> Unit) {
+private fun ActiveCard(a: CActiveDto, busy: Boolean, onPickup: () -> Unit, onDeliver: () -> Unit) {
     val ctx = LocalContext.current
     fun nav(lat: Double?, lng: Double?, label: String) { if (lat != null && lng != null) runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(label)})"))) } }
     fun call(phone: String) { if (phone.isNotBlank()) runCatching { ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } }
     CrCard(border = true) {
         Text("FAOL BUYURTMA  #${a.orderCode}", color = Cr.Orange, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(10.dp))
+        // Ikki bosqich (LokmaGo qutisi): 1) restorandan olish → «Taomni oldim»  2) mijozga yetkazish → «Yetkazildi». Server topshirishni olishdan OLDIN rad etadi (409).
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StepDot(1, "Restorandan olish", done = !a.canPickup, current = a.canPickup, Modifier.weight(1f))
+            Box(Modifier.width(18.dp).height(2.dp).background(if (!a.canPickup) Cr.Green else Cr.Line))
+            StepDot(2, "Mijozga yetkazish", done = false, current = !a.canPickup, Modifier.weight(1f))
+        }
         Spacer(Modifier.height(12.dp))
         StopRow(Cr.Green, a.restaurantName, a.restaurantAddress, "")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(start = 24.dp, top = 8.dp)) {
@@ -266,10 +275,57 @@ private fun ActiveCard(a: CActiveDto, busy: Boolean, onDeliver: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Cr.OrangeSoft).padding(14.dp)) {
             Text(if (a.isPaid) "To'langan — mijozdan pul olinmaydi" else "Mijozdan olinadi: ${a.collectAmount.som()}", color = Cr.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text("Sizning daromadingiz: ${a.deliveryFee.som()}", color = Cr.Orange, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Sizning daromadingiz: ${a.deliveryFee.som()}" + if (a.freeDelivery) " (mijozga yetkazish tekin)" else "", color = Cr.Orange, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
         }
         Spacer(Modifier.height(14.dp))
-        CrButton("Yetkazildi", loading = busy, onClick = onDeliver)
+        if (a.canPickup) CrButton("Taomni oldim", loading = busy, onClick = onPickup)
+        else CrButton("Yetkazildi", loading = busy, enabled = a.canDeliver, onClick = onDeliver)
+    }
+}
+
+@Composable private fun StepDot(n: Int, label: String, done: Boolean, current: Boolean, modifier: Modifier) =
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(24.dp).clip(CircleShape).background(if (done) Cr.Green else if (current) Cr.Orange else Cr.Line), contentAlignment = Alignment.Center) {
+            Text(if (done) "✓" else "$n", color = if (done || current) Color.White else Cr.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(6.dp))
+        Text(label, color = if (current || done) Cr.Text else Cr.Muted, fontSize = 12.sp, fontWeight = if (current) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+    }
+
+/** «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida). Tanlanmasa buyurtma ko'rinmaydi. */
+@Composable
+private fun DistrictsCard(all: List<CDistrictDto>, selected: List<String>, busy: Boolean, onSave: (List<String>) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    CrCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Ish tumanlari", color = Cr.Muted, fontSize = 12.sp)
+                Text(
+                    if (selected.isEmpty()) "Tanlanmagan — buyurtma ko'rmaysiz" else all.filter { it.id in selected }.joinToString(", ") { it.uz.removeSuffix(" tumani") },
+                    color = if (selected.isEmpty()) Cr.Red else Cr.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Text("O'zgartirish", color = Cr.Orange, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = true }.padding(8.dp))
+        }
+    }
+    if (open) {
+        var pick by remember(selected) { mutableStateOf(selected.toSet()) }
+        AlertDialog(
+            onDismissRequest = { open = false }, containerColor = Color.White,
+            title = { Text("Ish tumanlari", color = Cr.Text) },
+            text = {
+                LazyColumn {
+                    items(all, key = { it.id }) { d ->
+                        Row(Modifier.fillMaxWidth().clickable { pick = if (d.id in pick) pick - d.id else pick + d.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(d.id in pick, { checked -> pick = if (checked) pick + d.id else pick - d.id }, colors = CheckboxDefaults.colors(checkedColor = Cr.Orange, uncheckedColor = Cr.Muted))
+                            Text(d.uz, fontSize = 15.sp, color = Cr.Text)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onSave(all.map { it.id }.filter { it in pick }); open = false }, enabled = !busy) { Text("Saqlash", color = Cr.Orange, fontWeight = FontWeight.Bold) } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Bekor", color = Cr.Muted) } },
+        )
     }
 }
 
@@ -286,7 +342,7 @@ private fun OrdersTab(vm: CourierViewModel, ui: CourierUi) {
         item { CrSegment(listOf("Faol (${if (ui.active != null) 1 else 0})", "Tarix"), seg) { seg = it } }
         if (seg == 0) {
             val a = ui.active
-            if (a != null) item { ActiveCard(a, ui.busy, vm::deliver) } else item { Empty("Faol buyurtma yo'q", "Qabul qilgan buyurtmangiz shu yerda ko'rinadi") }
+            if (a != null) item { ActiveCard(a, ui.busy, vm::pickup, vm::deliver) } else item { Empty("Faol buyurtma yo'q", "Qabul qilgan buyurtmangiz shu yerda ko'rinadi") }
         } else {
             if (ui.history.isEmpty()) item { Empty("Hali yetkazish yo'q", "Topshirgan buyurtmalaringiz shu yerda ko'rinadi") }
             items(ui.history, key = { it.id }) { h ->

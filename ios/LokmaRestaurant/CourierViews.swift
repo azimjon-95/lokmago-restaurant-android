@@ -223,6 +223,7 @@ struct OfferModalView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sizning daromadingiz").font(.system(size: 12)).foregroundStyle(Cr.muted)
                     Text(som(o.deliveryFee ?? 0)).font(.system(size: 24, weight: .heavy)).foregroundStyle(Cr.orange)
+                    if o.freeDelivery == true { Text("Mijozga yetkazish tekin (LokmaGo to'laydi)").font(.system(size: 12)).foregroundStyle(Cr.muted) }
                     Text(o.isPaid == true ? "To'langan — mijozdan pul olinmaydi" : "Mijozdan olinadi: \(som(o.collectAmount ?? 0))").font(.system(size: 13)).foregroundStyle(Cr.text)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Cr.orangeSoft, in: RoundedRectangle(cornerRadius: 14))
             }.padding(18).background(Color.white, in: RoundedRectangle(cornerRadius: 24))
@@ -276,6 +277,7 @@ struct HomeTab: View {
                 if courier.onShift && courier.active != nil { Text("Smenani yakunlash uchun avval buyurtmani topshiring").font(.system(size: 12)).foregroundStyle(Cr.muted) }
                 if courier.locationDenied { Text("Joylashuv ruxsatisiz smena ishlamaydi: buyurtma sizga yaqinlik bo'yicha beriladi. Sozlamalar → LGO Business → Joylashuv → «Ilova ishlatilganda».").font(.system(size: 12)).foregroundStyle(Cr.red) }
 
+                DistrictsCard()
                 Button(action: openEarnings) {
                     CrCard {
                         Text("Bugungi daromad").font(.system(size: 13)).foregroundStyle(Cr.muted)
@@ -324,7 +326,7 @@ struct OfferCard: View {
             }
             if let l = o.addressLabel, !l.isEmpty { Text("Yetkazish: \(l)").font(.system(size: 13)).foregroundStyle(Cr.text).padding(.top, 8) }
             if let s = o.itemsSummary, !s.isEmpty { Text(s).font(.system(size: 12)).foregroundStyle(Cr.muted) }
-            Text("Daromad: \(som(o.deliveryFee ?? 0))").font(.system(size: 15, weight: .heavy)).foregroundStyle(Cr.orange).padding(.top, 8)
+            Text("Daromad: \(som(o.deliveryFee ?? 0))" + (o.freeDelivery == true ? " • mijozga tekin" : "")).font(.system(size: 15, weight: .heavy)).foregroundStyle(Cr.orange).padding(.top, 8)
             Text(o.isPaid == true ? "To'langan" : "Mijozdan olinadi: \(som(o.collectAmount ?? 0))").font(.system(size: 12)).foregroundStyle(Cr.muted)
             CrButton(title: "Qabul qilish", loading: courier.busy) { Task { await courier.accept(o.id) } }.padding(.top, 12)
         }
@@ -345,6 +347,13 @@ struct ActiveCard: View {
                 .padding(.horizontal, 12).padding(.vertical, 8).background(Cr.orangeSoft, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain)
     }
+    private func step(_ n: Int, _ label: String, done: Bool, current: Bool) -> some View {
+        HStack(spacing: 6) {
+            Text(done ? "✓" : "\(n)").font(.system(size: 12, weight: .bold)).foregroundStyle(done || current ? Color.white : Cr.muted)
+                .frame(width: 24, height: 24).background(done ? Cr.green : (current ? Cr.orange : Cr.line), in: Circle())
+            Text(label).font(.system(size: 12, weight: current ? .bold : .regular)).foregroundStyle(current || done ? Cr.text : Cr.muted).lineLimit(1)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
     private func stop(_ c: Color, _ title: String, _ address: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Circle().fill(c).frame(width: 12, height: 12).padding(.top, 5)
@@ -354,6 +363,12 @@ struct ActiveCard: View {
     var body: some View {
         CrCard {
             Text("FAOL BUYURTMA  #" + (a.orderCode ?? "")).font(.system(size: 12, weight: .heavy)).foregroundStyle(Cr.orange).tracking(1)
+            // Ikki bosqich (LokmaGo qutisi): 1) restorandan olish → «Taomni oldim»  2) mijozga yetkazish → «Yetkazildi». Server topshirishni olishdan OLDIN rad etadi (409).
+            HStack(spacing: 6) {
+                step(1, "Restorandan olish", done: a.canPickup != true, current: a.canPickup == true)
+                Rectangle().fill(a.canPickup != true ? Cr.green : Cr.line).frame(width: 18, height: 2)
+                step(2, "Mijozga yetkazish", done: false, current: a.canPickup != true)
+            }.padding(.top, 10)
             stop(Cr.green, a.restaurantName ?? "Restoran", a.restaurantAddress ?? "").padding(.top, 12)
             HStack(spacing: 8) { pill("Xaritada", "ic_map") { open(a.restaurantLat, a.restaurantLng, a.restaurantName ?? "Restoran") }
                 if let p = a.restaurantPhone, !p.isEmpty { pill("Qo'ng'iroq", "ic_phone") { call(p) } } }.padding(.leading, 24).padding(.top, 8)
@@ -363,9 +378,10 @@ struct ActiveCard: View {
             ForEach(Array((a.items ?? []).enumerated()), id: \.offset) { _, i in Text("• \(i.quantity ?? 0)× " + (i.name ?? "")).font(.system(size: 14)).foregroundStyle(Cr.text) }.padding(.top, 14)
             VStack(alignment: .leading, spacing: 2) {
                 Text(a.isPaid == true ? "To'langan — mijozdan pul olinmaydi" : "Mijozdan olinadi: \(som(a.collectAmount ?? 0))").font(.system(size: 15, weight: .bold)).foregroundStyle(Cr.text)
-                Text("Sizning daromadingiz: \(som(a.deliveryFee ?? 0))").font(.system(size: 14, weight: .heavy)).foregroundStyle(Cr.orange)
+                Text("Sizning daromadingiz: \(som(a.deliveryFee ?? 0))" + (a.freeDelivery == true ? " (mijozga yetkazish tekin)" : "")).font(.system(size: 14, weight: .heavy)).foregroundStyle(Cr.orange)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(Cr.orangeSoft, in: RoundedRectangle(cornerRadius: 14)).padding(.top, 12)
-            CrButton(title: "Yetkazildi", loading: courier.busy) { Task { await courier.deliver() } }.padding(.top, 14)
+            if a.canPickup == true { CrButton(title: "Taomni oldim", loading: courier.busy) { Task { await courier.pickup() } }.padding(.top, 14) }
+            else { CrButton(title: "Yetkazildi", loading: courier.busy, enabled: a.canDeliver ?? true) { Task { await courier.deliver() } }.padding(.top, 14) }
         }
     }
 }
@@ -450,6 +466,48 @@ struct ProfileTab: View {
                 CrButton(title: courier.onShift ? "Chiqishdan oldin ishni yakunlang" : "Restoran / Kuryer tanlash", filled: false, enabled: !courier.onShift) { role = "" }
                 CrButton(title: "Chiqish", filled: false, danger: true, enabled: !courier.onShift) { Task { await courier.signOut() } }
             }.padding(16).padding(.bottom, 12)
+        }
+    }
+}
+
+/// «Ish tumanlari»: kuryer qaysi tumanlarda ishlashini o'zi tanlaydi (masalan bugun Chust tumanida). Tanlanmasa buyurtma ko'rinmaydi.
+private struct DistrictsCard: View {
+    @EnvironmentObject private var courier: CourierModel
+    @State private var open = false
+    @State private var pick: Set<String> = []
+    private var summary: String {
+        courier.workDistricts.isEmpty ? "Tanlanmagan — buyurtma ko'rmaysiz"
+            : courier.districts.filter { courier.workDistricts.contains($0.id) }.map { ($0.uz ?? $0.id).replacingOccurrences(of: " tumani", with: "") }.joined(separator: ", ")
+    }
+    var body: some View {
+        if !courier.districts.isEmpty {
+            CrCard {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ish tumanlari").font(.system(size: 12)).foregroundStyle(Cr.muted)
+                        Text(summary).font(.system(size: 14, weight: .semibold)).foregroundStyle(courier.workDistricts.isEmpty ? Cr.red : Cr.text)
+                    }
+                    Spacer()
+                    Button { pick = Set(courier.workDistricts); open = true } label: { Text("O'zgartirish").font(.system(size: 13, weight: .bold)).foregroundStyle(Cr.orange) }.buttonStyle(.plain)
+                }
+            }
+            .sheet(isPresented: $open) {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("Bekor") { open = false }.foregroundStyle(Cr.muted)
+                        Spacer()
+                        Text("Ish tumanlari").font(.system(size: 17, weight: .bold)).foregroundStyle(Cr.text)
+                        Spacer()
+                        Button("Saqlash") { let ids = courier.districts.map(\.id).filter { pick.contains($0) }; open = false; Task { await courier.saveDistricts(ids) } }
+                            .font(.system(size: 16, weight: .bold)).foregroundStyle(Cr.orange)
+                    }.padding(16)
+                    List(courier.districts) { d in
+                        Button { if pick.contains(d.id) { pick.remove(d.id) } else { pick.insert(d.id) } } label: {
+                            HStack { Text(d.uz ?? d.id).foregroundStyle(Cr.text); Spacer(); if pick.contains(d.id) { Image(systemName: "checkmark").foregroundStyle(Cr.orange) } }
+                        }
+                    }
+                }.preferredColorScheme(.light)
+            }
         }
     }
 }
