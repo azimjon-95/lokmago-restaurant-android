@@ -70,6 +70,11 @@ class SessionStore @Inject constructor(@ApplicationContext ctx: Context) {
     fun setRole(r: String?) { prefs.edit().apply { if (r == null) remove("app_role") else putString("app_role", r) }.apply(); _role.value = r }
 
     /** Permission walk-through shown once per device (survives logout on purpose). */
+    /** «Avtomatik ishga tushish» sahifasida LGO'ni yoqdim — Android buni tekshirish imkonini bermaydi, foydalanuvchi tasdiqlaydi. */
+    var autostartConfirmed: Boolean
+        get() = prefs.getBoolean("autostart_confirmed", false)
+        set(v) { prefs.edit().putBoolean("autostart_confirmed", v).apply() }
+
     var permissionsOnboarded: Boolean
         get() = prefs.getBoolean("permissions_onboarded", false)
         set(v) { prefs.edit().putBoolean("permissions_onboarded", v).apply() }

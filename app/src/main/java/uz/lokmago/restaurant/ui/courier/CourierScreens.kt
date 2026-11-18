@@ -406,7 +406,7 @@ private fun ProfileTab(vm: CourierViewModel, ui: CourierUi) {
             }
         }
         ui.message?.let { m -> item { Text(m, color = Cr.OrangeDark, fontSize = 13.sp) } }
-        item { CrButton("Push tekshiruvi (test xabar)", filled = false, loading = ui.busy) { vm.testPush() } }
+        item { CrButton("Sinov xabarini yuborish", filled = false, loading = ui.busy) { vm.testPush() } }
         item { Text("Test bosgach ilovani yoping va telefonni bloklang — «Push ishlayapti ✓» kelishi kerak.", color = Cr.Muted, fontSize = 11.sp) }
         item { CrButton(if (ui.onShift) "Chiqishdan oldin ishni yakunlang" else "Restoran / Kuryer tanlash", filled = false, enabled = !ui.onShift) { vm.switchSide() } }
         item { CrButton("Chiqish", filled = false, danger = true, enabled = !ui.onShift) { vm.logout() } }

@@ -19,6 +19,22 @@
     <!-- One-tap "allow running in background" system dialog (order alerts are the core function: see docs/ANDROID-PUSH.md, Play policy note) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Android 11+: «Avto-ishga tushirish» sahifasi va Google xizmatlari telefonda bormi — tekshirish uchun (alert/PhoneSetupProbe.kt) -->
+    <queries>
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.miui.securitycenter" />
+        <package android:name="com.huawei.systemmanager" />
+        <package android:name="com.hihonor.systemmanager" />
+        <package android:name="com.coloros.safecenter" />
+        <package android:name="com.oplus.safecenter" />
+        <package android:name="com.oppo.safe" />
+        <package android:name="com.vivo.permissionmanager" />
+        <package android:name="com.iqoo.secure" />
+        <package android:name="com.asus.mobilemanager" />
+        <package android:name="com.letv.android.letvsafe" />
+        <package android:name="com.transsion.phonemaster" />
+    </queries>
+
     <application
         android:name=".LokmaGoApp"
         android:allowBackup="false"

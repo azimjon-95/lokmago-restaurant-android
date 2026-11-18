@@ -93,11 +93,11 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
             Row2(R.drawable.ic_volume, "Ovozni sozlash", VOLUME[cfg.volume.coerceIn(0, 2)], last = true) { vm.cycleVolume(cfg.volume) }
         }
 
-        // Does a new order really wake THIS phone? Each line says why it matters and fixes itself in one tap.
+        // Does a new order really wake THIS phone? One row, plain words; the screen itself walks through every step.
         val missing = checks.count { !it.ok }
-        Group(if (missing == 0) "Ogohlantirish tayyorligi  ✓" else "Ogohlantirish tayyorligi  ($missing ta sozlanmagan)") {
-            Row2(R.drawable.ic_refresh, "Push tekshiruvi", "Nega xabar kelmayapti?") { showPush = true }
-            checks.forEachIndexed { i, c -> Readiness(c, ctx) { if (i < checks.lastIndex) Divider() } }
+        Group("Buyurtma signali") {
+            Row2(if (missing == 0) R.drawable.ic_check_circle else R.drawable.ic_bell_ring, "Telefonni sozlash",
+                if (missing == 0) "Tayyor ✓" else "$missing ta qadam qoldi — bosing", last = true) { showPush = true }
         }
 
         Group("Hisob") {
@@ -142,19 +142,3 @@ fun SettingsScreen(onLogout: () -> Unit, onOpenReport: () -> Unit = {}, onOpenRe
     }
 }
 
-@Composable private fun Readiness(item: ReadinessItem, ctx: Context, divider: @Composable () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(28.dp).clip(CircleShape).background(if (item.ok) Lg.Green.copy(alpha = 0.18f) else Lg.Orange.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
-            LgIcon(if (item.ok) R.drawable.ic_check else R.drawable.ic_warning, if (item.ok) Lg.GreenText else Lg.Orange, 16.dp)
-        }
-        Column(Modifier.weight(1f)) {
-            Text(item.title, color = Lg.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(item.hint, color = Lg.Muted, fontSize = 12.sp)
-        }
-        if (!item.ok && item.fix != null) Text("Sozlash", color = Dt.onAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Lg.Orange)
-                .clickableNoRipple { runCatching { ctx.startActivity(Intent(item.fix).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-                .padding(horizontal = 12.dp, vertical = 7.dp))
-    }
-    divider()
-}

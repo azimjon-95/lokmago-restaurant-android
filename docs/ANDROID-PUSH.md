@@ -94,3 +94,13 @@ Play siyosati: bu ruxsat ilovaning asosiy vazifasi (buyurtma signali) fonda ishl
 3. Bildirishnomalar → «Yangi buyurtma» kanali → ovoz, qulf ekranida ko'rsatish, «Suzuvchi bildirishnoma».
 4. So'nggi ilovalar ro'yxatida ilova kartasini pastga torting → **qulf** belgisi (tozalashda o'ldirilmasin).
 5. Profil → **Push tekshiruvi**: hamma bandlar yashil bo'lsin, «Test push» → ilovani yopib, telefonni bloklang.
+
+## «Telefonni sozlash» — yagona ekran (2026-11-18)
+Birinchi kirish, Bosh sahifadagi «sozlanmagan» banneri va Profil → «Telefonni sozlash» — hammasi bitta ekran (`ui/permissions/PhoneSetupScreen.kt`).
+* **Bitta tugma «Hammasini sozlash»**: kerakli tizim oynalarini ketma-ket o'zi ochadi (bildirishnoma ruxsati → buyurtma ovozi → «ilova uxlab qolmasin»
+  (bitta «Ruxsat berish» oynasi) → qulflangan ekran (Android 14+) → avto-ishga tushirish (faqat shu sahifa telefonda bor bo'lsa: Xiaomi, Huawei, Honor,
+  Oppo/Realme/OnePlus, Vivo/iQOO, Asus, Tecno/Infinix)). Foydalanuvchi ruxsat berib orqaga qaytadi — keyingisi ochiladi; rad etilgani qayta-qayta ochilmaydi.
+* **Oddiy til**: ekranda Firebase/FCM/token/server so'zlari yo'q (testda tekshiriladi). Faqat foydalanuvchi qila oladigan ish ko'rsatiladi.
+* **Ulanishni ilova o'zi hal qiladi** (3 marta urinadi); foydalanuvchiga faqat qo'lidan keladigan narsa: internetni yoqish, ilovani yangilash, qayta urinish.
+* Texnik tafsilot (yordam xizmati uchun) ekranning pastida yig'ilgan holda.
+* Mantiq: `alert/PhoneSetup.kt` (toza Kotlin, `PhoneSetupTest` — 7 test), telefon holati va tizim oynalari: `alert/PhoneSetupProbe.kt`.
