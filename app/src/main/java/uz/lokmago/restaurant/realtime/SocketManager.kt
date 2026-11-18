@@ -72,6 +72,16 @@ class SocketManager @Inject constructor(private val json: Json) {
         }
     }
 
+    /**
+     * A fresh connection NOW. Used when the network came back or changed: the old TCP connection is dead, but Socket.IO only notices
+     * after its ping timeout (~45 s), and while the phone dozes its backoff timers do not run at all. Keeps the same listeners.
+     */
+    @Synchronized
+    fun reconnectNow() {
+        val s = socket ?: return
+        runCatching { s.disconnect(); s.connect() }
+    }
+
     @Synchronized
     fun disconnect() {
         socket?.let { it.off(); it.disconnect(); it.close() }

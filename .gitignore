@@ -12,9 +12,10 @@ env.properties
 .env
 *.jks
 *.keystore
-app/google-services.json
 # more secrets / build outputs
-**/google-services.json
+# app/google-services.json IS committed on purpose: Firebase client config, not a secret (see docs/PUSH-AUDIT.md).
+# NEVER commit a service-account key (…firebase-adminsdk….json): it lives only in the server .env.
+*firebase-adminsdk*.json
 *.p12
 *.pem
 *.pfx

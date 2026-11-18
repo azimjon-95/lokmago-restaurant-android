@@ -48,7 +48,15 @@ class AlertReadiness @Inject constructor(@ApplicationContext private val ctx: Co
         list += ReadinessItem(
             "battery", "Batareya cheklovi o'chirilgan", "Telefon uxlaganda tizim ilovani to'xtatib qo'ymasligi uchun «Cheklovsiz» qiling",
             ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(pkg),
-            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+            // One-tap system dialog ("Allow"); the PermissionsDialog falls back to the full list if a phone does not support it
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$pkg")),
+        )
+
+        // Push itself: a build without Firebase can never receive an order while the app is closed (the cause of "Firebase sozlanmagan")
+        val firebase = runCatching { com.google.firebase.FirebaseApp.getApps(ctx).isNotEmpty() }.getOrDefault(false)
+        list += ReadinessItem(
+            "firebase", "Push xizmati (Firebase)", "Bu versiyada push yo'q — ilova yopiq bo'lsa buyurtma kelmaydi. Ilovaning yangi versiyasini o'rnating.",
+            firebase, null,
         )
         return list
     }

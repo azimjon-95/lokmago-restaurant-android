@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "919295424605",
+    "project_id": "date-4729d",
+    "storage_bucket": "date-4729d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919295424605:android:61b9ea5a0669c19b9035b4",
+        "android_client_info": {
+          "package_name": "uz.lokmago.restaurant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "919295424605-h2rki8fa2jihs9bjsmlrkhnv8alf412b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7xJnFThX64VCyrmE22qvxWVNBMiXnaNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "919295424605-h2rki8fa2jihs9bjsmlrkhnv8alf412b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919295424605:android:d4f9b5a6f81c76ee9035b4",
+        "android_client_info": {
+          "package_name": "uz.lokmago.restaurant.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "919295424605-h2rki8fa2jihs9bjsmlrkhnv8alf412b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7xJnFThX64VCyrmE22qvxWVNBMiXnaNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "919295424605-h2rki8fa2jihs9bjsmlrkhnv8alf412b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

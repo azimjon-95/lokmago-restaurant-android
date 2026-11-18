@@ -49,10 +49,13 @@ fun PermissionsDialog(items: List<ReadinessItem>, onChanged: () -> Unit, onDismi
         if (item.id == "notifications" && Build.VERSION.SDK_INT >= 33 && !asked) {      // the one real system dialog
             asked = true; notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS); return
         }
-        item.fix?.let { runCatching { ctx.startActivity(Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+        val f = item.fix ?: return
+        val ok = runCatching { ctx.startActivity(Intent(f).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+        // some phones do not have the one-tap battery dialog: open the full list instead
+        if (!ok && item.id == "battery") runCatching { ctx.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 
-    val missing = items.firstOrNull { !it.ok }
+    val missing = items.firstOrNull { !it.ok && it.fix != null }        // something the user can fix with a tap
     val oem = Build.MANUFACTURER.lowercase()
     val aggressive = listOf("xiaomi", "redmi", "poco", "huawei", "honor", "oppo", "realme", "vivo", "oneplus", "samsung", "tecno", "infinix").any { oem.contains(it) }
 
@@ -76,7 +79,7 @@ fun PermissionsDialog(items: List<ReadinessItem>, onChanged: () -> Unit, onDismi
                                 Text(item.title, color = Lg.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 Text(item.hint, color = Lg.Muted, fontSize = 12.sp)
                             }
-                            if (!item.ok) Text("Sozlash", color = Dt.onAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            if (!item.ok && item.fix != null) Text("Sozlash", color = Dt.onAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
                                 modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Lg.Orange).clickable { fix(item) }.padding(horizontal = 12.dp, vertical = 7.dp))
                         }
                     }
@@ -84,8 +87,8 @@ fun PermissionsDialog(items: List<ReadinessItem>, onChanged: () -> Unit, onDismi
                     if (aggressive) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Lg.CardStat).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Telefoningizda (${Build.MANUFACTURER}) qo'shimcha", color = Lg.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         Text("Sozlamalar → Ilovalar → LGO Business → «Avto-ishga tushirish» va «Fonda ishlashga ruxsat»ni yoqing. Aks holda tizim ilovani to'xtatib qo'yishi va buyurtma kechikishi mumkin.", color = Lg.Muted, fontSize = 12.sp)
-                        Text("Ilova sozlamalarini ochish", color = Lg.GreenText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable { runCatching { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } })
+                        Text("«Avto-ishga tushirish»ni ochish", color = Lg.GreenText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable { if (!openAutostart(ctx)) runCatching { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } })
                     }
 
                     Text("Ruxsatlarni majburan olib bo'lmaydi — ularni faqat siz yoqasiz. Yoqmasangiz ilova ochiq paytda ishlayveradi, lekin yopiq yoki bloklangan telefonda yangi buyurtma haqida xabar kelmaydi.", color = Lg.Muted, fontSize = 12.sp)
@@ -100,4 +103,27 @@ fun PermissionsDialog(items: List<ReadinessItem>, onChanged: () -> Unit, onDismi
             }
         }
     }
+}
+
+/**
+ * Xiaomi/Redmi/POCO, Huawei/Honor, Oppo/Realme, Vivo: "Avto-ishga tushirish" (Autostart) — o'chiq bo'lsa tizim ilovani o'ldiradi va
+ * push kelganda ham uyg'otmaydi. Android'da buning standart API'si yo'q: ishlab chiqaruvchilarning ma'lum sahifalari ketma-ket sinab ko'riladi.
+ * @return true — sahifa ochildi
+ */
+internal fun openAutostart(ctx: android.content.Context): Boolean {
+    val candidates = listOf(
+        "com.miui.securitycenter" to "com.miui.permcenter.autostart.AutoStartManagementActivity",
+        "com.huawei.systemmanager" to "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+        "com.huawei.systemmanager" to "com.huawei.systemmanager.optimize.process.ProtectActivity",
+        "com.hihonor.systemmanager" to "com.hihonor.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.permission.startup.StartupAppListActivity",
+        "com.oppo.safe" to "com.oppo.safe.permission.startup.StartupAppListActivity",
+        "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+        "com.iqoo.secure" to "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity",
+    )
+    for ((pkg, cls) in candidates) {
+        val i = Intent().setClassName(pkg, cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (runCatching { ctx.startActivity(i) }.isSuccess) return true
+    }
+    return false
 }

@@ -69,3 +69,28 @@ ilovada `app/google-services.json` (paket `uz.lokmago.restaurant`, debug: `.debu
   Agar buni qurilmada kuzatsangiz, `expedited WorkManager` qo'shish mumkin (yangi bog'liqlik; alohida baholanadi).
 * Chiqishda DELETE tarmoq yo'qligidan o'tmasa, token serverda qoladi: ilova push'ni e'tiborsiz qoldiradi, boshqa restoranga kirilsa token ko'chadi.
 * Firebase/APNs kalitlarini aylantirish (rotation) — `.env` o'zgartirib, restart (uzilishsiz: push o'chiq holatda ham buyurtma tizimi ishlaydi).
+
+## 2026-11-18: "ba'zan keladi, ba'zan jim" — ildiz sabablar va tuzatishlar
+
+**1. Firebase'siz APK (asosiy sabab).** `app/build.gradle.kts` `google-services.json` bo'lmasa Firebase'ni JIMGINA o'chirardi, fayl esa `.gitignore`da edi.
+Shu APK'da push tokeni hech qachon olinmaydi → server ro'yxatida telefon yo'q («Serverda 0 ta qurilma») → buyurtma faqat ilova ochiq va socket ulangan
+paytda keladi. Tuzatish: `app/google-services.json` repoda (ikkala paket: `uz.lokmago.restaurant` va `.debug`); fayl yo'q bo'lsa yig'ish **xato bilan to'xtaydi**.
+Bu fayl sir emas (Firebase mijoz konfiguratsiyasi). Tavsiya: Google Cloud → Credentials'da undagi API kalitni Android ilovalari (paket + SHA-1) bilan cheklang.
+Service-account kaliti (`*firebase-adminsdk*.json`) hech qachon repoga tushmaydi — faqat server `.env`da.
+
+**2. Tarmoq qaytganda darhol qayta ulanmasdi.** Socket.IO o'z taymerini kutardi (uxlayotgan telefonda ishlamaydi). Endi `NetworkMonitor.available` →
+`SocketManager.reconnectNow()` + kutilayotgan buyurtmalarni qayta o'qish (Wi-Fi ↔ mobil almashganda ham).
+
+**3. O'ldirilgan xizmatni tiklovchi zaxira yo'q edi.** `OrderWatchdog`: tizimga kirilgan paytda har ~15 daqiqada (AlarmManager.setAndAllowWhileIdle, maxsus ruxsatsiz)
+socket'ni tekshiradi, kutilayotgan buyurtmalarni o'qiydi (bor bo'lsa odatdagi signal), «Fon ulanishi» yoqilgan bo'lsa xizmatni qayta yoqadi. Qayta yuklanishdan keyin BootReceiver yoqadi.
+
+**4. Batareya cheklovi va Avto-ishga tushirish.** Ruxsatlar oynasida batareya cheklovini bir tugma bilan olib tashlash (tizim oynasi
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`), Xiaomi/Huawei/Honor/Oppo/Vivo uchun «Avto-ishga tushirish» sahifasiga to'g'ridan-to'g'ri o'tish, va «Push xizmati (Firebase)» bandi.
+Play siyosati: bu ruxsat ilovaning asosiy vazifasi (buyurtma signali) fonda ishlashga bog'liq bo'lgani uchun so'raladi — Play Console'da shuni yozing.
+
+### Xiaomi / Redmi / POCO (MIUI / HyperOS) — telefonda bir marta
+1. Sozlamalar → Ilovalar → LGO Business → **Avto-ishga tushirish: YOQ**.
+2. Batareya tejash → **Cheklovsiz** (No restrictions).
+3. Bildirishnomalar → «Yangi buyurtma» kanali → ovoz, qulf ekranida ko'rsatish, «Suzuvchi bildirishnoma».
+4. So'nggi ilovalar ro'yxatida ilova kartasini pastga torting → **qulf** belgisi (tozalashda o'ldirilmasin).
+5. Profil → **Push tekshiruvi**: hamma bandlar yashil bo'lsin, «Test push» → ilovani yopib, telefonni bloklang.

@@ -45,6 +45,7 @@ class OrderCoordinator @Inject constructor(
     private val notifier: Notifier,
     private val session: SessionStore,
     private val devices: DeviceRegistrar,
+    private val net: NetworkMonitor,
     @AppScope private val scope: CoroutineScope,
 ) {
     private val _arrivals = MutableSharedFlow<Order>(extraBufferCapacity = 16)
@@ -94,7 +95,18 @@ class OrderCoordinator @Inject constructor(
         }
         // login and JWT rotation (a new Session) register this phone's push token; logout stops everything
         scope.launch { session.session.collect { if (it == null) stop() else devices.ensureRegistered() } }
+        // Internet back / Wi-Fi <-> mobile: reconnect at once and re-read pending orders (an order may have arrived while offline)
+        scope.launch { net.available.collect { if (session.token != null) { socket.reconnectNow(); syncPending(); devices.ensureRegistered() } } }
         scope.launch { syncPending() }
+    }
+
+    /** Watchdog / FCM wake-up: make sure the socket is up and nothing pending was missed. Safe to call any time. */
+    suspend fun wake() {
+        if (session.token == null) return
+        start()
+        if (!socket.connected.value) socket.reconnectNow()
+        syncPending()
+        devices.ensureRegistered()
     }
 
     @Synchronized

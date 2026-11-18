@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import uz.lokmago.restaurant.alert.Notifier
 import uz.lokmago.restaurant.alert.OrderListenerService
+import uz.lokmago.restaurant.alert.OrderWatchdog
 import uz.lokmago.restaurant.data.local.SessionStore
 import uz.lokmago.restaurant.di.AppScope
 
@@ -25,6 +26,8 @@ class LokmaGoApp : Application() {
         notifier.ensureChannels()
         courierNotifier.ensureChannels()
         // Logged in => the listener runs (screen off, app swiped away, after reboot). Logged out => it stops.
+        // Backup watchdog: while logged in, every ~15 min reconnect + re-read pending orders (alert/OrderWatchdog.kt)
+        scope.launch { session.session.map { it != null }.distinctUntilChanged().collect { if (it) OrderWatchdog.schedule(this@LokmaGoApp) else OrderWatchdog.cancel(this@LokmaGoApp) } }
         scope.launch {
             // logged in AND the user did not switch it off in Sozlamalar (FCM keeps working either way)
             combine(session.session.map { it != null }.distinctUntilChanged(), session.persistentListener) { loggedIn, on -> loggedIn && on }

@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- One-tap "allow running in background" system dialog (order alerts are the core function: see docs/ANDROID-PUSH.md, Play policy note) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:name=".LokmaGoApp"
@@ -75,6 +77,10 @@
             android:name=".courier.CourierLocationService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <receiver
+            android:name=".alert.OrderWatchdog"
+            android:exported="false" />
 
         <receiver
             android:name=".alert.ReminderActionReceiver"

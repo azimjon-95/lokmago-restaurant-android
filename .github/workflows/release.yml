@@ -42,7 +42,7 @@ jobs:
           [ -n "$KS_B64" ] || { echo "::error::KEYSTORE_BASE64 secret is missing"; exit 1; }
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
           # FCM ixtiyoriy: lakmago-server hozircha push yubormaydi (buyurtmalar Socket.IO orqali keladi).
-          if [ -n "$GS_B64" ]; then echo "$GS_B64" | base64 -d > app/google-services.json; else echo "::warning::GOOGLE_SERVICES_JSON_BASE64 yo'q — FCM o'chiq build"; fi
+          if [ -n "$GS_B64" ]; then echo "$GS_B64" | base64 -d > app/google-services.json; else echo "::notice::GOOGLE_SERVICES_JSON_BASE64 bo'sh — repodagi app/google-services.json ishlatiladi"; fi
           echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - name: Unit tests

@@ -92,8 +92,15 @@ extra["lokmago.releaseInputs"] = mapOf(
 extra["lokmago.envFileKeys"] = envProps.stringPropertyNames().toSet()
 apply(from = rootProject.file("gradle/release-validation.gradle.kts"))
 
-// Firebase is optional at build time: without google-services.json the app still builds (push disabled).
+// Firebase is REQUIRED. Earlier the build silently skipped Firebase when app/google-services.json was missing: the APK installed fine,
+// but the phone never got a push token, never registered on the server, and new orders only arrived while the app happened to be open
+// ("ba'zan ishlaydi, ba'zan jim"). Now a build without it fails loudly instead of producing a phone that misses orders.
+// Opt-out only for deliberate local experiments: -PallowNoFirebase=true
 if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+else if (project.findProperty("allowNoFirebase") != "true") throw GradleException(
+    "app/google-services.json yo'q: bu APK'ga push (FCM) kelmaydi va yangi buyurtmani o'tkazib yuboradi. " +
+    "Firebase konsoli (loyiha date-4729d) -> Android ilova uz.lokmago.restaurant -> google-services.json ni app/ ga qo'ying.",
+)
 
 dependencies {
     implementation(libs.androidx.core.ktx)
