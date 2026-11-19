@@ -29,7 +29,7 @@ import uz.lokmago.restaurant.domain.OrderQueue
 @InstallIn(SingletonComponent::class)
 object AppModule {
     @Provides @Singleton
-    fun json(): Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
+    fun json(): Json = uz.lokmago.restaurant.data.remote.ApiJson      // encodeDefaults=true: see data/remote/ApiJson.kt
 
     @Provides @Singleton
     fun okHttp(session: SessionStore): OkHttpClient = OkHttpClient.Builder()

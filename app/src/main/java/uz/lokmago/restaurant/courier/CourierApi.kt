@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import retrofit2.http.*
 import uz.lokmago.restaurant.data.remote.dto.OkDto
 
-/** lakmago-server `/api/courier-app/*` (docs/COURIER-APP.md). Kuryer JWT'si restoran tokenidan ALOHIDA (boshqa kalit). */
+/** lakmago-server `/api/courier-app/…` (docs/COURIER-APP.md). Kuryer JWT'si restoran tokenidan ALOHIDA (boshqa kalit). */
 @Serializable data class CLoginReq(val login: String, val password: String)
 @Serializable data class CCourierDto(val id: String = "", val login: String = "", val name: String = "", val phone: String = "", val vehicle: String = "")
 @Serializable data class CLoginRes(val token: String, val courier: CCourierDto = CCourierDto())

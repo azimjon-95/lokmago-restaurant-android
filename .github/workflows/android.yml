@@ -17,6 +17,7 @@ jobs:
           python3 tools/static-check/kt_check.py
           python3 tools/static-check/kt_imports.py
           python3 tools/static-check/sw_check.py
+          python3 tools/static-check/comments_check.py
       - name: Pure-Kotlin unit tests (no Android SDK)
         run: tools/kotlin-check/run.sh
 

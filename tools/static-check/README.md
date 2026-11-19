@@ -7,6 +7,7 @@ takroriy e'lon (masalan bir xil nomli ikki `val`), noto'g'ri a'zo nomi (`model.x
 python3 tools/static-check/kt_check.py     # Kotlin: import, resurs, Lg/Dt tokenlari, takroriy xossa, manifest komponentlari
 python3 tools/static-check/kt_imports.py   # Kotlin: unutilgan Compose/AndroidX importlari
 python3 tools/static-check/sw_check.py     # Swift: Dt tokenlari, rasm aktivlari, AppModel/MenuStore/CourierModel a'zolari, APIClient chaqiruvlari
+python3 tools/static-check/comments_check.py  # Kotlin+Swift: izoh ichidagi "/*" (masalan `/api/x/*`) faylning qolganini izohga aylantiradi
 tools/kotlin-check/run.sh                  # toza Kotlin mantiq testlari (kotlinc bilan)
 ```
 Skriptlar ataylab buzilgan fayllarda sinab ko'rilgan (har bir xato turi ushlanadi).

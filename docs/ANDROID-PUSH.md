@@ -104,3 +104,13 @@ Birinchi kirish, Bosh sahifadagi «sozlanmagan» banneri va Profil → «Telefon
 * **Ulanishni ilova o'zi hal qiladi** (3 marta urinadi); foydalanuvchiga faqat qo'lidan keladigan narsa: internetni yoqish, ilovani yangilash, qayta urinish.
 * Texnik tafsilot (yordam xizmati uchun) ekranning pastida yig'ilgan holda.
 * Mantiq: `alert/PhoneSetup.kt` (toza Kotlin, `PhoneSetupTest` — 7 test), telefon holati va tizim oynalari: `alert/PhoneSetupProbe.kt`.
+
+## 2026-11-19: «Token yoki platforma noto'g'ri» — telefon serverda ro'yxatdan o'tolmasdi
+Telefondagi «Texnik ma'lumot»: `token: …C4DXdl` (Google tokeni BOR), `register error: Token yoki platforma noto'g'ri`, `devices: 0`.
+**Sabab:** ilovaning JSON sozlamasi (`Json { … }`, `encodeDefaults` yo'q) standart qiymatga teng maydonni so'rovga qo'shmaydi: `DeviceRegisterRequest.platform = "android"`
+yuborilmasdi, server esa `platform`ni majburiy talab qilardi -> 400 -> HECH BIR Android telefoni push uchun ro'yxatda yo'q edi. Xuddi shu xato kuryer
+ro'yxatida (`CDeviceReq`) va kuryer tumanlarini tozalashda (`CMeReq(emptyList())` -> `{}`) bor edi. Haqiqiy kotlinx-serialization bilan takrorlangan.
+**Tuzatish:** `data/remote/ApiJson.kt` — yagona sozlama, `encodeDefaults = true` (`explicitNulls = false` saqlangan). Serverda ham: `platform` yo'q -> `android`
+(lakmago-server `0b7644c`) — allaqachon o'rnatilgan APK'lar server yangilangach o'zi ishlay boshlaydi. Testlar: `ApiJsonTest` (5), server `test:device-platform`.
+**Yo'lda topilgan:** `courier/CourierApi.kt` izohidagi `` `/api/courier-app/*` `` Kotlin'da ichma-ich izoh ochib, faylning qolganini izohga aylantirardi
+(kompilyatsiya xatosi). Tuzatildi; endi `tools/static-check/comments_check.py` CI'da tekshiradi.
