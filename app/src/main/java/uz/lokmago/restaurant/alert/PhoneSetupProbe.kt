@@ -37,7 +37,7 @@ class PhoneSetupProbe @Inject constructor(
             appHasPush = r["firebase"]?.ok ?: true,
             googleServices = hasGoogleServices(),
             online = net.online.value,
-            connecting = false, connected = false, serviceDown = false,
+            connecting = false, connected = false,
         )
     }
 
@@ -76,6 +76,13 @@ class PhoneSetupProbe @Inject constructor(
     fun updateIntents(): List<Intent> = listOf(
         Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")),
         Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")),
+    )
+
+    /** Google Play xizmatlari sahifasi (yangilash). */
+    fun googleServicesIntents(): List<Intent> = listOf(
+        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.gms")),
+        Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.gms")),
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:com.google.android.gms")),
     )
 
     private fun details() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))

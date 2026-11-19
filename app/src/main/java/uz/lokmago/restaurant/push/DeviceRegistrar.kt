@@ -31,6 +31,10 @@ class DeviceRegistrar @Inject constructor(
     @AppScope scope: CoroutineScope,
 ) {
     private fun notificationsOn() = NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+
+    /** The last reason push setup failed: Google's token error text (e.g. SERVICE_NOT_AVAILABLE, FIS_AUTH_ERROR) or the server's answer. */
+    @Volatile var lastTokenError: String? = null; private set
+    @Volatile var lastServerError: Throwable? = null; private set
     private val core = DeviceRegistration(
         jwt = { session.token },
         storedToken = { session.fcmToken },
@@ -40,13 +44,24 @@ class DeviceRegistrar @Inject constructor(
         delete = { apiCall { api.unregisterDevice(DeviceUnregisterRequest(it)) } },
         scope = scope,
         metaKey = { "${notificationsOn()}|${BuildConfig.VERSION_NAME}" },
+        onFailure = { lastServerError = it },
     )
 
-    private suspend fun firebaseToken(): String? = runCatching {
-        suspendCancellableCoroutine<String?> { c ->
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { c.resume(if (it.isSuccessful) it.result else null) }
-        }
-    }.getOrNull()
+    /** Google's push token. Never hangs (20 s cap) and remembers WHY it failed — the old code dropped the reason. */
+    private suspend fun firebaseToken(): String? {
+        val r = runCatching {
+            kotlinx.coroutines.withTimeoutOrNull(20_000) {
+                suspendCancellableCoroutine<Result<String>> { c ->
+                    FirebaseMessaging.getInstance().token.addOnCompleteListener {
+                        c.resume(if (it.isSuccessful && !it.result.isNullOrBlank()) Result.success(it.result) else Result.failure(it.exception ?: IllegalStateException("EMPTY_TOKEN")))
+                    }
+                }
+            } ?: Result.failure(IllegalStateException("TIMEOUT"))
+        }.getOrElse { Result.failure(it) }
+        lastTokenError = r.exceptionOrNull()?.let { e -> generateSequence(e) { it.cause }.mapNotNull { it.message }.lastOrNull() ?: e.javaClass.simpleName }
+        if (r.isSuccess) lastServerError = null
+        return r.getOrNull()
+    }
 
     suspend fun register(token: String? = null): Boolean = core.register(token)
     fun ensureRegistered(token: String? = null) = core.ensureRegistered(token)

@@ -61,6 +61,7 @@ class PhoneSetupViewModel @Inject constructor(
     private val registrar: DeviceRegistrar,
     private val api: LokmaApi,
     private val session: SessionStore,
+    private val coordinator: uz.lokmago.restaurant.realtime.OrderCoordinator,
 ) : ViewModel() {
     val state = MutableStateFlow(probe.local().copy(connecting = true))
     val testText = MutableStateFlow<String?>(null)
@@ -74,7 +75,7 @@ class PhoneSetupViewModel @Inject constructor(
     /** Tizim sozlamasidan qaytganda: mahalliy holatni qayta o'qish (ulanish natijasi saqlanadi). */
     fun refresh() {
         val s = state.value
-        state.value = probe.local().copy(connecting = s.connecting, connected = s.connected, serviceDown = s.serviceDown)
+        state.value = probe.local().copy(connecting = s.connecting, connected = s.connected, problem = s.problem)
         if (!s.connected && !s.connecting) connect()                       // masalan internet endi yoqildi
     }
 
@@ -86,6 +87,7 @@ class PhoneSetupViewModel @Inject constructor(
             val local = probe.local()
             var registered = false
             var serverPush: Boolean? = null
+            var serverErr: String? = null
             val lines = mutableListOf<String>()
             if (local.appHasPush && local.googleServices && local.online) {
                 for (wait in longArrayOf(0, 3_000, 7_000)) {
@@ -96,14 +98,32 @@ class PhoneSetupViewModel @Inject constructor(
                 try {
                     val r = apiCall { api.devices() }
                     serverPush = r.providers.android
-                    lines += "server android push: ${r.providers.android}; devices: ${r.devices.size}"
-                } catch (e: AppError) { lines += "devices: ${e.message}" }
+                    lines += "server push: ${r.providers.android}; devices: ${r.devices.size}"
+                } catch (e: AppError) { serverErr = code(e); lines += "devices: ${e.javaClass.simpleName} ${e.message}" }
             }
-            lines += "app push: ${local.appHasPush}; gms: ${local.googleServices}; online: ${local.online}; token: ${session.fcmToken?.takeLast(6)?.let { "…$it" } ?: "none"}; registered: $registered"
+            val tokenOk = session.fcmToken != null && registrar.lastTokenError == null
+            val postErr = registrar.lastServerError
+            if (!registered && postErr != null) serverErr = code(postErr)
+            lines += "app push: ${local.appHasPush}; gms: ${local.googleServices}; online: ${local.online}; registered: $registered"
+            lines += "token: ${session.fcmToken?.takeLast(6)?.let { "…$it" } ?: "none"}; token error: ${registrar.lastTokenError ?: "-"}"
+            lines += "register error: ${postErr?.let { "${it.javaClass.simpleName} ${it.message}" } ?: "-"}"
             tech.value = lines
-            state.value = probe.local().copy(connecting = false, connected = registered && serverPush == true, serviceDown = registered && serverPush == false)
+            val problem = if (registered && serverPush == true) PhoneSetup.Problem.NONE
+                else PhoneSetup.classify(tokenOk || registered, registrar.lastTokenError, serverErr, serverPush)
+            state.value = probe.local().copy(connecting = false, connected = registered && serverPush == true, problem = problem)
         }
     }
+
+    private fun code(e: Throwable): String = when (e) {
+        is AppError.Unauthorized -> "401"
+        is AppError.Offline -> "offline"
+        is AppError.Server -> e.message?.let { Regex("\\((\\d{3})\\)").find(it)?.groupValues?.get(1) } ?: "500"
+        is AppError.NotFound -> "404"
+        else -> "400"
+    }
+
+    /** «Qayta kirish»: hisobdan chiqadi; birinchi ekran (Restoran / Kuryer) ochiladi. */
+    fun relogin() = viewModelScope.launch { coordinator.logout(); session.setRole(null) }
 
     fun confirmAutostart() { session.autostartConfirmed = true; refresh() }
 
@@ -123,6 +143,7 @@ class PhoneSetupViewModel @Inject constructor(
     fun intents(id: Id) = probe.intents(id)
     fun internet() = probe.internetIntents()
     fun update() = probe.updateIntents()
+    fun updateGoogle() = probe.googleServicesIntents()
     fun open(intents: List<android.content.Intent>, ctx: Context) = probe.open(intents, ctx)
 }
 
@@ -162,6 +183,8 @@ fun PhoneSetupScreen(onDismiss: () -> Unit, showTest: Boolean, onChanged: () -> 
             } else vm.open(vm.intents(step.id), ctx)
             Action.OPEN_INTERNET -> vm.open(vm.internet(), ctx)
             Action.UPDATE_APP -> vm.open(vm.update(), ctx)
+            Action.UPDATE_GOOGLE -> vm.open(vm.updateGoogle(), ctx)
+            Action.RELOGIN -> { onDismiss(); vm.relogin() }
             Action.RETRY -> vm.connect()
             Action.WAIT, Action.NONE -> Unit
         }
@@ -178,6 +201,7 @@ fun PhoneSetupScreen(onDismiss: () -> Unit, showTest: Boolean, onChanged: () -> 
     val done = PhoneSetup.doneCount(plan)
     val fixes = PhoneSetup.pendingFixes(plan)
     val all = PhoneSetup.allDone(plan)
+    val conn = plan.firstOrNull { it.id == Id.CONNECTION }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(color = Lg.Bg, modifier = Modifier.fillMaxSize()) {
@@ -195,7 +219,7 @@ fun PhoneSetupScreen(onDismiss: () -> Unit, showTest: Boolean, onChanged: () -> 
                             LgIcon(if (all) R.drawable.ic_check_circle else R.drawable.ic_bell_ring, if (all) Lg.GreenText else Lg.Orange, 30.dp)
                             Column(Modifier.weight(1f)) {
                                 Text(if (all) "Hammasi tayyor" else "$done / ${plan.size} tayyor", color = Lg.Text, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                                Text(if (all) "Buyurtmalar o'z vaqtida keladi" else if (fixes > 0) "Pastdagi tugmani bosing — kerakli oynalar o'zi ochiladi" else "Bir oz kuting…", color = Lg.Muted, fontSize = 13.sp)
+                                Text(PhoneSetup.headline(plan), color = Lg.Muted, fontSize = 13.sp)
                             }
                         }
                         LinearProgressIndicator(progress = { done.toFloat() / plan.size.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Lg.Green, trackColor = Lg.CardHigh)
@@ -218,6 +242,9 @@ fun PhoneSetupScreen(onDismiss: () -> Unit, showTest: Boolean, onChanged: () -> 
                             opened = emptySet(); guided = true; resumes++
                         }
                         showTest && s.connected -> PrimaryButton("Sinov xabarini yuborish", icon = R.drawable.ic_bell_ring, loading = testing) { vm.sendTest() }
+                        // not connected: the main button does what the connection step needs (never a misleading "Tayyor")
+                        conn != null && !conn.done && conn.button.isNotBlank() -> PrimaryButton(conn.button, icon = R.drawable.ic_refresh, color = Lg.Orange) { launch(conn) }
+                        conn != null && !conn.done && conn.action == Action.WAIT -> PrimaryButton("Ulanmoqda…", loading = true) {}
                         else -> PrimaryButton("Tayyor", icon = R.drawable.ic_check, color = Lg.Green, onClick = onDismiss)
                     }
                     if (!all) Text("Keyinroq", color = Lg.Muted, fontSize = 14.sp, modifier = Modifier.clickable(onClick = onDismiss).padding(10.dp))

@@ -32,6 +32,8 @@ class DeviceRegistration(
     private val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
     /** Anything the server stores about this phone besides the token (notification permission, app version): a change registers again. */
     private val metaKey: () -> String = { "" },
+    /** Why the last attempt failed (no token / server refused). For the setup screen; never thrown. */
+    private val onFailure: (Throwable?) -> Unit = {},
 ) {
     private val lock = Mutex()
     @Volatile private var registeredFor: String? = null
@@ -39,7 +41,7 @@ class DeviceRegistration(
 
     /** One attempt. true = the server holds this (jwt, token) pair. Never throws (except cancellation). */
     suspend fun register(token: String? = null): Boolean = lock.withLock {
-        val current = token ?: fetchToken() ?: storedToken() ?: return false
+        val current = token ?: fetchToken() ?: storedToken() ?: run { onFailure(null); return false }
         saveToken(current)                                   // remember it even when logged out: registered right after login
         val session = jwt() ?: return false
         val key = "$session|$current|${metaKey()}"
@@ -49,7 +51,7 @@ class DeviceRegistration(
             registeredFor = key
             true
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { false }                       // offline / 5xx: NOT registered, will retry
+        catch (e: Exception) { onFailure(e); false }         // offline / 5xx: NOT registered, will retry
     }
 
     @Synchronized
