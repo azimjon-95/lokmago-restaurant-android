@@ -60,7 +60,7 @@ for f in glob.glob(ROOT+'/java/**/*.kt',recursive=True):
         if not ('androidx.compose.runtime.getValue' in exact or 'androidx.compose.runtime' in wild): errs.append((rel,'getValue (delegate `by`)','androidx.compose.runtime'))
     if re.search(r'\bvar\s+\w+\s+by\s+(?:remember|rememberSaveable)',s):
         if not ('androidx.compose.runtime.setValue' in exact or 'androidx.compose.runtime' in wild): errs.append((rel,'setValue (var by remember)','androidx.compose.runtime'))
-IGNORE_NAMES={'contentDescription','painterResource','delay','launch','size','height','width','getValue'}      # named args / members / fully-qualified uses
+IGNORE_NAMES={'contentDescription','painterResource','delay','launch','size','height','width','getValue','isActive'}      # isActive: also a Job member (connectJob?.isActive)      # named args / members / fully-qualified uses
 real=[e for e in sorted(set(errs)) if not (e[1].split()[0] in IGNORE_NAMES)]
 for e in real: print("MISSING IMPORT",*e)
 print("count:",len(real)); sys.exit(1 if real else 0)
